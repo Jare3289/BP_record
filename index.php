@@ -51,6 +51,11 @@ $msgText = match ($msg) {
     <p class="sub">วัดตอนเช้าและก่อนนอน เวลาละ 2 ครั้ง · ค่าเฉลี่ยและการแปลผลคำนวณอัตโนมัติ</p>
   </header>
 
+  <nav class="tabs">
+    <a href="index.php" class="tab active">📋 บันทึก/ตาราง</a>
+    <a href="chart.php" class="tab">📈 กราฟแนวโน้ม</a>
+  </nav>
+
   <?php if ($msgText): ?>
     <div class="flash <?= $msgText[1] === 'ok' ? 'flash-ok' : 'flash-err' ?>"><?= e($msgText[0]) ?></div>
   <?php endif; ?>

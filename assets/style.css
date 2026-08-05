@@ -122,6 +122,32 @@ td.strong.bp-crisis   { background: #fecaca; color: #991b1b; }
 .link-btn:hover { text-decoration: underline; }
 .link-btn.danger { color: #dc2626; }
 
+/* แท็บ */
+.tabs { display: flex; gap: 8px; margin: 18px 0 4px; }
+.tab {
+  padding: 9px 18px; border-radius: 10px 10px 0 0; text-decoration: none;
+  color: var(--muted); font-weight: 600; font-size: 14px; background: #eef1f6;
+}
+.tab.active { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-bottom-color: var(--panel); }
+.tab:hover { color: var(--ink); }
+
+/* กราฟ */
+.chart-box { width: 100%; overflow-x: auto; }
+.bp-chart { width: 100%; min-width: 480px; max-width: 680px; height: auto; display: block; margin: 0 auto; }
+.bp-chart .axl { font-size: 12px; fill: #475569; }
+.bp-chart .axttl { font-size: 12px; fill: #334155; font-weight: 700; }
+.bp-chart circle { cursor: pointer; }
+.bp-chart circle:hover { r: 6; }
+
+.chart-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 14px; font-size: 13px; color: var(--ink); }
+.chart-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend .lg.sep { width: 1px; height: 16px; background: var(--line); }
+.chart-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.chart-legend .dot-morning { background: #fff; border: 1.5px solid #334155; }
+.chart-legend .dot-night { background: #1f2937; border: 1px solid #fff; box-shadow: 0 0 0 1px #cbd5e1; }
+.chart-legend .sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.chart-note { text-align: center; color: var(--muted); font-size: 12px; margin: 12px 0 0; }
+
 .page-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
 
 @media (max-width: 720px) {
