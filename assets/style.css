@@ -1,0 +1,156 @@
+:root {
+  --bg: #f4f6fb;
+  --panel: #ffffff;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+
+  /* สีการแปลผล (ให้ใกล้เคียงกับตารางเดิม) */
+  --normal: #16a34a;
+  --elevated: #65a30d;
+  --stage1: #d99a1a;
+  --stage2: #d1603a;
+  --crisis: #b91c1c;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Sarabun", "Segoe UI", Tahoma, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 60px; }
+
+.page-head h1 { margin: 0 0 4px; font-size: 26px; }
+.page-head .sub { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* Flash */
+.flash { padding: 12px 16px; border-radius: 10px; margin: 16px 0; font-weight: 600; }
+.flash-ok { background: #dcfce7; color: #166534; }
+.flash-err { background: #fee2e2; color: #991b1b; }
+
+/* การ์ดสรุป */
+.cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px; margin: 20px 0;
+}
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.card-title { font-size: 13px; color: var(--muted); }
+.card-value { font-size: 32px; font-weight: 700; margin: 4px 0; }
+.card-unit { font-size: 12px; color: var(--muted); }
+
+/* แผง */
+.panel {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 20px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.panel h2 { margin: 0 0 16px; font-size: 18px; }
+
+/* ฟอร์ม */
+.form-top { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.field span { font-weight: 600; }
+.field input {
+  padding: 9px 11px; border: 1px solid var(--line); border-radius: 9px;
+  font-size: 15px; color: var(--ink); background: #fff;
+}
+.note-field { flex: 1; min-width: 200px; }
+
+.grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.session { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 0; }
+.session legend { font-weight: 700; padding: 0 8px; }
+.session.morning { background: #fff7fa; }
+.session.night { background: #f5fbf7; }
+
+.reading { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.reading-label { width: 66px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.reading input {
+  width: 80px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  font-size: 15px; text-align: center;
+}
+
+.form-actions { margin-top: 18px; display: flex; gap: 10px; }
+.btn { padding: 10px 20px; border-radius: 10px; border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); }
+.btn-ghost { background: #f3f4f6; color: var(--ink); }
+.btn-ghost:hover { background: #e5e7eb; }
+
+/* ตาราง */
+.table-scroll { overflow-x: auto; }
+.bp-table { border-collapse: collapse; width: 100%; font-size: 13px; white-space: nowrap; }
+.bp-table th, .bp-table td { border: 1px solid var(--line); padding: 6px 8px; text-align: center; }
+.bp-table thead th { background: #f8fafc; font-weight: 600; }
+.bp-table .grp.morning { background: #fdeef4; }
+.bp-table .grp.night { background: #eaf7ef; }
+.bp-table .grp.avg { background: #fdf6e3; }
+.bp-table tbody tr:hover { background: #f9fafb; }
+.bp-table .dim { color: var(--muted); }
+.bp-table .strong { font-weight: 700; }
+.bp-table .nowrap { white-space: nowrap; }
+.bp-table .empty { color: var(--muted); padding: 24px; }
+.bp-table .result { text-align: left; }
+
+/* Badge แปลผล */
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; color: #fff; font-size: 12px; font-weight: 600; }
+.bp-normal   { background: var(--normal); }
+.bp-elevated { background: var(--elevated); }
+.bp-stage1   { background: var(--stage1); }
+.bp-stage2   { background: var(--stage2); }
+.bp-crisis   { background: var(--crisis); }
+.bp-none, .badge.bp-none { background: #9ca3af; }
+
+/* สีตัวเลขค่าเฉลี่ยบน (ระบายพื้นเบา ๆ) */
+td.strong.bp-normal   { background: #dcfce7; color: #166534; }
+td.strong.bp-elevated { background: #ecfccb; color: #3f6212; }
+td.strong.bp-stage1   { background: #fef3c7; color: #92400e; }
+td.strong.bp-stage2   { background: #fee2e2; color: #9a3412; }
+td.strong.bp-crisis   { background: #fecaca; color: #991b1b; }
+
+/* ปุ่มในตาราง */
+.actions { white-space: nowrap; }
+.link-btn { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px; padding: 2px 6px; }
+.link-btn:hover { text-decoration: underline; }
+.link-btn.danger { color: #dc2626; }
+
+/* แท็บ */
+.tabs { display: flex; gap: 8px; margin: 18px 0 4px; }
+.tab {
+  padding: 9px 18px; border-radius: 10px 10px 0 0; text-decoration: none;
+  color: var(--muted); font-weight: 600; font-size: 14px; background: #eef1f6;
+}
+.tab.active { background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-bottom-color: var(--panel); }
+.tab:hover { color: var(--ink); }
+
+/* กราฟ */
+.chart-box { width: 100%; overflow-x: auto; }
+.bp-chart { width: 100%; min-width: 480px; max-width: 680px; height: auto; display: block; margin: 0 auto; }
+.bp-chart .axl { font-size: 12px; fill: #475569; }
+.bp-chart .axttl { font-size: 12px; fill: #334155; font-weight: 700; }
+.bp-chart circle { cursor: pointer; }
+.bp-chart circle:hover { r: 6; }
+
+.chart-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin-bottom: 14px; font-size: 13px; color: var(--ink); }
+.chart-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+.chart-legend .lg.sep { width: 1px; height: 16px; background: var(--line); }
+.chart-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.chart-legend .dot-morning { background: #fff; border: 1.5px solid #334155; }
+.chart-legend .dot-night { background: #1f2937; border: 1px solid #fff; box-shadow: 0 0 0 1px #cbd5e1; }
+.chart-legend .sw { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.chart-note { text-align: center; color: var(--muted); font-size: 12px; margin: 12px 0 0; }
+
+.page-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
+
+@media (max-width: 720px) {
+  .grid-inputs { grid-template-columns: 1fr; }
+  .card-value { font-size: 26px; }
+}
