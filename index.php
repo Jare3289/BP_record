@@ -35,7 +35,7 @@ $flash = match ($msg) {
     default      => null,
 };
 
-$PAGE = 'ตารางบันทึก'; $ACTIVE = 'dashboard';
+$PAGE = 'ตารางบันทึก'; $ACTIVE = 'table';
 require __DIR__ . '/includes/header.php';
 ?>
 

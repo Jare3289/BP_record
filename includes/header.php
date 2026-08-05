@@ -21,7 +21,7 @@ $ACTIVE = $ACTIVE ?? '';
 <body>
 <nav class="navbar navbar-expand-lg app-navbar sticky-top">
   <div class="container-fluid px-lg-4">
-    <a class="navbar-brand d-flex align-items-center gap-2" href="index.php">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="dashboard.php">
       <span class="brand-badge"><i class="bi bi-heart-pulse-fill"></i></span>
       <span class="brand-text">BP<span class="fw-light">Record</span></span>
     </a>
@@ -31,7 +31,12 @@ $ACTIVE = $ACTIVE ?? '';
     <div class="collapse navbar-collapse" id="nav">
       <ul class="navbar-nav me-auto">
         <li class="nav-item">
-          <a class="nav-link <?= $ACTIVE === 'dashboard' ? 'active' : '' ?>" href="index.php">
+          <a class="nav-link <?= $ACTIVE === 'dashboard' ? 'active' : '' ?>" href="dashboard.php">
+            <i class="bi bi-grid-1x2"></i> แดชบอร์ด
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <?= $ACTIVE === 'table' ? 'active' : '' ?>" href="index.php">
             <i class="bi bi-table"></i> ตารางบันทึก
           </a>
         </li>
