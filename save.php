@@ -1,6 +1,6 @@
 <?php
 /**
- * บันทึก (เพิ่ม/แก้ไข) และลบข้อมูล
+ * บันทึก (เพิ่ม/แก้ไข/ลบ) การวัดรายครั้ง · ช่วงการรักษา · การตั้งค่า
  */
 require __DIR__ . '/includes/config.php';
 require __DIR__ . '/includes/functions.php';
@@ -12,13 +12,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $action = $_POST['action'] ?? 'save';
 
-/** ---------- ลบข้อมูล ---------- */
+/** ---------- ลบการวัดรายครั้ง ---------- */
 if ($action === 'delete') {
     $id = (int) ($_POST['id'] ?? 0);
-    if ($id > 0) {
-        $stmt = db()->prepare('DELETE FROM bp_readings WHERE id = ?');
-        $stmt->execute([$id]);
-    }
+    if ($id > 0) db()->prepare('DELETE FROM readings WHERE id = ?')->execute([$id]);
     header('Location: index.php?msg=deleted');
     exit;
 }
@@ -52,52 +49,52 @@ if ($action === 'delete_phase') {
     exit;
 }
 
-/** ---------- เพิ่ม / แก้ไข ---------- */
-$id   = (int) ($_POST['id'] ?? 0);
-$date = trim($_POST['record_date'] ?? '');
+/** ---------- การตั้งค่า (เป้าหมายความดัน) ---------- */
+if ($action === 'save_settings') {
+    $ts = (int) ($_POST['target_sys'] ?? 135);
+    $td = (int) ($_POST['target_dia'] ?? 85);
+    $ts = max(90, min(200, $ts));
+    $td = max(50, min(130, $td));
+    try {
+        $stmt = db()->prepare('INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)');
+        $stmt->execute(['target_sys', (string)$ts]);
+        $stmt->execute(['target_dia', (string)$td]);
+    } catch (Throwable $e) {}
+    $back = $_POST['back'] ?? 'dashboard.php';
+    header('Location: ' . $back . '?msg=saved');
+    exit;
+}
 
-// ตรวจสอบวันที่
+/** ---------- เพิ่ม / แก้ไข การวัดรายครั้ง ---------- */
+$id     = (int) ($_POST['id'] ?? 0);
+$date   = trim($_POST['record_date'] ?? '');
+$period = $_POST['period'] ?? 'morning';
+if (!array_key_exists($period, periods())) $period = 'morning';
+
 if ($date === '' || !strtotime($date)) {
     header('Location: index.php?msg=error_date');
     exit;
 }
+$date = date('Y-m-d', strtotime($date));
 
-// แปลงช่องตัวเลขให้เป็น int หรือ null
-$fields = [
-    'm1_sys', 'm1_dia', 'm1_hr', 'm2_sys', 'm2_dia', 'm2_hr',
-    'n1_sys', 'n1_dia', 'n1_hr', 'n2_sys', 'n2_dia', 'n2_hr',
-];
+$numOrNull = fn($k) => (($v = $_POST[$k] ?? '') === '' || !is_numeric($v)) ? null : $v;
+$sys = $numOrNull('sys'); $dia = $numOrNull('dia'); $hr = $numOrNull('hr');
+$weight = $numOrNull('weight'); $height = $numOrNull('height');
+$note = trim($_POST['note'] ?? '') ?: null;
 
-$data = ['record_date' => date('Y-m-d', strtotime($date))];
-foreach ($fields as $f) {
-    $v = $_POST[$f] ?? '';
-    $data[$f] = ($v === '' || !is_numeric($v)) ? null : (int) $v;
-}
-// น้ำหนัก / ส่วนสูง (ทศนิยมได้)
-foreach (['weight', 'height'] as $f) {
-    $v = $_POST[$f] ?? '';
-    $data[$f] = ($v === '' || !is_numeric($v)) ? null : (float) $v;
-}
-$fields = array_merge($fields, ['weight', 'height']);
-$data['note'] = trim($_POST['note'] ?? '') ?: null;
+$sys = $sys === null ? null : (int)$sys;
+$dia = $dia === null ? null : (int)$dia;
+$hr  = $hr  === null ? null : (int)$hr;
+$weight = $weight === null ? null : (float)$weight;
+$height = $height === null ? null : (float)$height;
 
 try {
     if ($id > 0) {
-        // UPDATE
-        $set = 'record_date = :record_date, '
-             . implode(', ', array_map(fn($f) => "$f = :$f", $fields))
-             . ', note = :note';
-        $sql = "UPDATE bp_readings SET $set WHERE id = :id";
-        $data['id'] = $id;
-        db()->prepare($sql)->execute($data);
+        db()->prepare('UPDATE readings SET record_date=?, period=?, sys=?, dia=?, hr=?, weight=?, height=?, note=? WHERE id=?')
+            ->execute([$date, $period, $sys, $dia, $hr, $weight, $height, $note, $id]);
     } else {
-        // INSERT (ถ้าวันที่ซ้ำจะอัปเดตทับ)
-        $cols = array_merge(['record_date'], $fields, ['note']);
-        $placeholders = implode(', ', array_map(fn($c) => ":$c", $cols));
-        $updates = implode(', ', array_map(fn($c) => "$c = VALUES($c)", array_merge($fields, ['note'])));
-        $sql = 'INSERT INTO bp_readings (' . implode(', ', $cols) . ") VALUES ($placeholders) "
-             . "ON DUPLICATE KEY UPDATE $updates";
-        db()->prepare($sql)->execute($data);
+        db()->prepare('INSERT INTO readings (record_date, period, sys, dia, hr, weight, height, note, measured_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
+            ->execute([$date, $period, $sys, $dia, $hr, $weight, $height, $note]);
     }
 } catch (PDOException $e) {
     header('Location: index.php?msg=error');

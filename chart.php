@@ -2,22 +2,20 @@
 require __DIR__ . '/includes/config.php';
 require __DIR__ . '/includes/functions.php';
 
-$rows   = db()->query('SELECT * FROM bp_readings ORDER BY record_date ASC, id ASC')->fetchAll();
 $phases = load_phases();
+$days   = group_days(all_readings());   // เก่า→ใหม่
 
-// เตรียมข้อมูลรายวัน (เรียงเก่า→ใหม่)
+// เตรียมข้อมูลรายวัน
 $daily = [];
-foreach ($rows as $r) {
-    $a  = daily_average($r);
-    $ph = phase_for_date($phases, $r['record_date']);
+foreach ($days as $d) {
     $daily[] = [
-        'date'   => $r['record_date'],
-        'sys'    => $a['sys'],
-        'dia'    => $a['dia'],
-        'hr'     => $a['hr'],
-        'weight' => isset($r['weight']) && $r['weight'] !== null ? (float)$r['weight'] : null,
-        'height' => isset($r['height']) && $r['height'] !== null ? (float)$r['height'] : null,
-        'phase'  => $ph,
+        'date'   => $d['date'],
+        'sys'    => $d['avg']['sys'],
+        'dia'    => $d['avg']['dia'],
+        'hr'     => $d['avg']['hr'],
+        'weight' => $d['weight'],
+        'height' => $d['height'],
+        'phase'  => phase_for_date($phases, $d['date']),
     ];
 }
 
@@ -63,7 +61,7 @@ function svg_line(array $pts, array $series, float $ymin, float $ymax, array $gr
     $y = fn($v) => $T + ($ymax - max($ymin, min($ymax, $v))) / ($ymax - $ymin) * $ph;
     $every = $every ?: max(1, (int) ceil($n / 8));
 
-    $out = '<svg viewBox="0 0 ' . $W . ' ' . $H . '" class="line-svg" preserveAspectRatio="none">';
+    $out = '<svg viewBox="0 0 ' . $W . ' ' . $H . '" class="line-svg" style="aspect-ratio:' . $W . '/' . $H . '">';
     foreach ($grid as $g) {
         $yy = $y($g);
         $out .= sprintf('<line x1="%d" y1="%.1f" x2="%d" y2="%.1f" stroke="var(--bs-border-color)" stroke-width="1" stroke-dasharray="3 4"/>', $L, $yy, $L + $pw, $yy);

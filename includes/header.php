@@ -6,8 +6,10 @@
 $PAGE   = $PAGE   ?? 'บันทึกความดันโลหิต';
 $ACTIVE = $ACTIVE ?? '';
 $profile  = @require __DIR__ . '/profile.php';
-if (!is_array($profile)) $profile = ['name' => 'ผู้ใช้', 'role' => '', 'photo' => 'assets/profile.jpg'];
-$hasPhoto = is_file(__DIR__ . '/../' . $profile['photo']);
+if (!is_array($profile)) $profile = ['name' => 'ผู้ใช้', 'role' => '', 'photo' => 'assets/profile.png'];
+$photoPath = function_exists('resolve_profile_photo') ? resolve_profile_photo($profile, __DIR__ . '/..') : null;
+$hasPhoto  = $photoPath !== null;
+if ($hasPhoto) $profile['photo'] = $photoPath;
 ?>
 <!DOCTYPE html>
 <html lang="th" data-bs-theme="light">
