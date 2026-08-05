@@ -1,0 +1,9 @@
+# ค่าลับการเชื่อมต่อฐานข้อมูล — ห้าม commit
+includes/config.local.php
+
+# ไฟล์สถานะของ FTP deploy action
+.ftp-deploy-sync-state.json
+
+# ระบบ/เครื่องมือ
+.DS_Store
+*.log

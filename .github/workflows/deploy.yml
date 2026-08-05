@@ -1,0 +1,58 @@
+name: Deploy to InfinityFree (FTP)
+
+# Deploy อัตโนมัติเมื่อมีการ push ขึ้น main หรือกดรันเองจากแท็บ Actions
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ftp-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # สร้างไฟล์ตั้งค่าฐานข้อมูลจาก GitHub Secrets (ไม่ถูก commit เข้า repo)
+      - name: Generate DB config
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+        run: |
+          cat > includes/config.local.php <<PHP
+          <?php
+          define('DB_HOST', '${DB_HOST}');
+          define('DB_PORT', '${DB_PORT:-3306}');
+          define('DB_NAME', '${DB_NAME}');
+          define('DB_USER', '${DB_USER}');
+          define('DB_PASS', '${DB_PASS}');
+          define('DB_CHARSET', 'utf8mb4');
+          PHP
+          php -l includes/config.local.php
+
+      # อัปโหลดไฟล์ทั้งหมดขึ้น InfinityFree ผ่าน FTP
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftp
+          port: 21
+          local-dir: ./
+          server-dir: /htdocs/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/.github/**
+            **/node_modules/**
+            **/*.md
+            **/config.local.example.php
+            schema.sql

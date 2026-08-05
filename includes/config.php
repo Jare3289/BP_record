@@ -4,13 +4,20 @@
  * แก้ไขค่าด้านล่างให้ตรงกับเซิร์ฟเวอร์ MySQL ของคุณ
  */
 
-// อ่านค่าจาก environment variable ได้ (เผื่อใช้บน hosting) หรือใช้ค่า default
-define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
-define('DB_PORT', getenv('DB_PORT') ?: '3306');
-define('DB_NAME', getenv('DB_NAME') ?: 'bp_record');
-define('DB_USER', getenv('DB_USER') ?: 'root');
-define('DB_PASS', getenv('DB_PASS') ?: '');
-define('DB_CHARSET', 'utf8mb4');
+// โหลดค่าเชื่อมต่อจริงจากไฟล์ที่ไม่อยู่ใน git (สร้างโดย workflow หรือสร้างเองบนเซิร์ฟเวอร์)
+// ดูตัวอย่างที่ includes/config.local.example.php
+$__local = __DIR__ . '/config.local.php';
+if (is_file($__local)) {
+    require $__local;
+}
+
+// ค่า default (ใช้เมื่อไม่มี config.local.php และไม่มี environment variable)
+if (!defined('DB_HOST')) define('DB_HOST', getenv('DB_HOST') ?: '127.0.0.1');
+if (!defined('DB_PORT')) define('DB_PORT', getenv('DB_PORT') ?: '3306');
+if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'bp_record');
+if (!defined('DB_USER')) define('DB_USER', getenv('DB_USER') ?: 'root');
+if (!defined('DB_PASS')) define('DB_PASS', getenv('DB_PASS') ?: '');
+if (!defined('DB_CHARSET')) define('DB_CHARSET', 'utf8mb4');
 
 // เขตเวลา
 date_default_timezone_set('Asia/Bangkok');
