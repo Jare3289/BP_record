@@ -6,8 +6,10 @@
 $PAGE   = $PAGE   ?? 'บันทึกความดันโลหิต';
 $ACTIVE = $ACTIVE ?? '';
 $profile  = @require __DIR__ . '/profile.php';
-if (!is_array($profile)) $profile = ['name' => 'ผู้ใช้', 'role' => '', 'photo' => 'assets/profile.jpg'];
-$hasPhoto = is_file(__DIR__ . '/../' . $profile['photo']);
+if (!is_array($profile)) $profile = ['name' => 'ผู้ใช้', 'role' => '', 'photo' => 'assets/profile.png'];
+$photoPath = function_exists('resolve_profile_photo') ? resolve_profile_photo($profile, __DIR__ . '/..') : null;
+$hasPhoto  = $photoPath !== null;
+if ($hasPhoto) $profile['photo'] = $photoPath;
 ?>
 <!DOCTYPE html>
 <html lang="th" data-bs-theme="light">
@@ -48,6 +50,11 @@ $hasPhoto = is_file(__DIR__ . '/../' . $profile['photo']);
         <li class="nav-item">
           <a class="nav-link <?= $ACTIVE === 'chart' ? 'active' : '' ?>" href="chart.php">
             <i class="bi bi-graph-up"></i> กราฟแนวโน้ม
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link <?= $ACTIVE === 'phases' ? 'active' : '' ?>" href="phases.php">
+            <i class="bi bi-signpost-split"></i> ช่วงการรักษา
           </a>
         </li>
       </ul>

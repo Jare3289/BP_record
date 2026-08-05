@@ -8,5 +8,7 @@
 return [
     'name'  => 'Natchanan',
     'role'  => 'เจ้าของบันทึกความดันโลหิต',
-    'photo' => 'assets/profile.jpg',
+    // รองรับทั้ง .png / .jpg — วางไฟล์ชื่อ profile.png หรือ profile.jpg ในโฟลเดอร์ assets/
+    // ระบบจะค้นหาให้อัตโนมัติ (ตั้งค่าเฉพาะเจาะจงได้ที่นี่)
+    'photo' => 'assets/profile.png',
 ];

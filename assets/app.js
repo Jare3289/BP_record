@@ -1,6 +1,5 @@
-// ===== ฟอร์มเพิ่ม/แก้ไข (Bootstrap modal) =====
-const FIELDS = ['m1_sys','m1_dia','m1_hr','m2_sys','m2_dia','m2_hr',
-                'n1_sys','n1_dia','n1_hr','n2_sys','n2_dia','n2_hr'];
+// ===== ฟอร์มเพิ่ม/แก้ไข การวัดรายครั้ง (Bootstrap modal) =====
+const FIELDS = ['sys', 'dia', 'hr', 'weight', 'height'];
 
 function resetForm() {
   const form = document.getElementById('bpForm');
@@ -8,21 +7,90 @@ function resetForm() {
   const id = document.getElementById('f-id');
   if (id) id.value = '';
   const title = document.getElementById('formTitle');
-  if (title) title.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มบันทึกใหม่';
+  if (title) title.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มบันทึก';
 }
 
 function editRow(r) {
   document.getElementById('f-id').value = r.id || '';
   document.getElementById('f-date').value = r.record_date || '';
   document.getElementById('f-note').value = r.note || '';
+  const per = document.getElementById('f-period');
+  if (per && r.period) per.value = r.period;
   FIELDS.forEach(f => {
     const el = document.getElementById('f-' + f);
     if (el) el.value = (r[f] === null || r[f] === undefined) ? '' : r[f];
   });
   document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขบันทึก';
-  const modal = new bootstrap.Modal(document.getElementById('formModal'));
-  modal.show();
+  new bootstrap.Modal(document.getElementById('formModal')).show();
 }
+
+// ===== ช่วงการรักษา (phases) =====
+function resetPhase() {
+  const f = document.querySelector('#phaseModal form');
+  if (f) f.reset();
+  const id = document.getElementById('p-id'); if (id) id.value = '';
+  const t = document.getElementById('phaseTitle'); if (t) t.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มช่วง';
+}
+function editPhase(p) {
+  document.getElementById('p-id').value = p.id || '';
+  document.getElementById('p-name').value = p.name || '';
+  document.getElementById('p-start').value = p.start_date || '';
+  document.getElementById('p-note').value = p.note || '';
+  document.querySelectorAll('#p-colors input[name=color]').forEach(r => { r.checked = (r.value === p.color); });
+  document.getElementById('phaseTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขช่วง';
+  new bootstrap.Modal(document.getElementById('phaseModal')).show();
+}
+
+// ===== ไฮไลต์จุดตามช่วง (หน้ากราฟ scatter) =====
+function highlightPhase(id, el) {
+  document.querySelectorAll('.phase-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.scatter-pt').forEach(c => {
+    if (id === 'all') {
+      c.style.opacity = '1';
+      c.setAttribute('fill', c.dataset.base || '#2c5c7a');
+    } else if (c.dataset.phase === String(id)) {
+      c.style.opacity = '1';
+      c.setAttribute('fill', c.dataset.color || '#57b894');
+    } else {
+      c.style.opacity = '0.12';
+      c.setAttribute('fill', c.dataset.base || '#2c5c7a');
+    }
+  });
+}
+
+// ===== Pixel chart: สลับปี =====
+function showYear(y, el) {
+  document.querySelectorAll('.year-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.pixel-wrap').forEach(w => w.classList.toggle('d-none', w.dataset.year !== y));
+}
+
+// ===== Widget แสดง/ซ่อน (เก็บใน localStorage) =====
+function applyWidgets() {
+  let hidden = [];
+  try { hidden = JSON.parse(localStorage.getItem('bp-hidden-widgets') || '[]'); } catch (e) {}
+  document.querySelectorAll('.widget[data-widget]').forEach(w => {
+    w.style.display = hidden.includes(w.dataset.widget) ? 'none' : '';
+  });
+  document.querySelectorAll('[data-widget-toggle]').forEach(cb => {
+    cb.checked = !hidden.includes(cb.dataset.widgetToggle);
+  });
+}
+document.addEventListener('DOMContentLoaded', () => {
+  applyWidgets();
+  document.querySelectorAll('[data-widget-toggle]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      let hidden = [];
+      try { hidden = JSON.parse(localStorage.getItem('bp-hidden-widgets') || '[]'); } catch (e) {}
+      const id = cb.dataset.widgetToggle;
+      hidden = hidden.filter(x => x !== id);
+      if (!cb.checked) hidden.push(id);
+      localStorage.setItem('bp-hidden-widgets', JSON.stringify(hidden));
+      applyWidgets();
+    });
+  });
+});
 
 // ===== ค้นหาในตาราง =====
 document.addEventListener('DOMContentLoaded', () => {

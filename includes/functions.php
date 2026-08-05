@@ -81,3 +81,161 @@ function num(?int $n): string
 {
     return $n === null ? '-' : (string) $n;
 }
+
+/** จัดรูปแบบเลขทศนิยม ตัดศูนย์ท้ายที่ไม่จำเป็น (เช่น 170.00 -> 170, 70.50 -> 70.5) */
+function fmt_num($v): string
+{
+    if ($v === null || $v === '') return '-';
+    return rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
+}
+
+/** ช่วงเวลาในหนึ่งวัน => [ป้าย, ลำดับ, ไอคอน] */
+function periods(): array
+{
+    return [
+        'morning' => ['ช่วงเช้า', 1, 'bi-sunrise'],
+        'noon'    => ['ช่วงกลางวัน', 2, 'bi-sun'],
+        'evening' => ['ช่วงเย็น', 3, 'bi-sunset'],
+        'bedtime' => ['ก่อนนอน', 4, 'bi-moon-stars'],
+    ];
+}
+function period_label(string $code): string { return periods()[$code][0] ?? $code; }
+function period_order(string $code): int { return periods()[$code][1] ?? 9; }
+function period_icon(string $code): string { return periods()[$code][2] ?? 'bi-clock'; }
+
+/**
+ * โหลดการวัดทั้งหมด (รายครั้ง) — ปลอดภัยแม้ตาราง readings ยังไม่ถูกสร้าง
+ */
+function all_readings(): array
+{
+    try {
+        return db()->query('SELECT * FROM readings')->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * รวมการวัดเป็นรายวัน (คำนวณค่าเฉลี่ย + แปลผล + ครั้งที่ในแต่ละช่วง)
+ * คืน list เรียงตามวันที่ (เก่า→ใหม่) แต่ละรายการ:
+ *   ['date','readings'(เรียงตามช่วง/ครั้ง),'avg'=>[sys,dia,hr],'bp','weight','height']
+ */
+function group_days(array $readings): array
+{
+    $byDate = [];
+    foreach ($readings as $r) {
+        $byDate[$r['record_date']][] = $r;
+    }
+    ksort($byDate);
+    $out = [];
+    foreach ($byDate as $date => $list) {
+        // จัดลำดับ: ตามช่วง แล้วตาม id (=ครั้งที่)
+        usort($list, function ($a, $b) {
+            $o = period_order($a['period']) <=> period_order($b['period']);
+            return $o !== 0 ? $o : ((int)$a['id'] <=> (int)$b['id']);
+        });
+        // กำหนด "ครั้งที่" ในแต่ละช่วง
+        $seq = [];
+        foreach ($list as &$r) {
+            $seq[$r['period']] = ($seq[$r['period']] ?? 0) + 1;
+            $r['seq'] = $seq[$r['period']];
+        }
+        unset($r);
+        $avg = [
+            'sys' => avg_of(array_column($list, 'sys')),
+            'dia' => avg_of(array_column($list, 'dia')),
+            'hr'  => avg_of(array_column($list, 'hr')),
+        ];
+        // น้ำหนัก/ส่วนสูงล่าสุดของวัน (ค่าที่ไม่ว่างตัวท้าย)
+        $w = $h = null;
+        foreach ($list as $r) {
+            if (isset($r['weight']) && $r['weight'] !== null && $r['weight'] !== '') $w = (float)$r['weight'];
+            if (isset($r['height']) && $r['height'] !== null && $r['height'] !== '') $h = (float)$r['height'];
+        }
+        $out[] = [
+            'date' => $date, 'readings' => $list, 'avg' => $avg,
+            'bp' => classify_bp($avg['sys'], $avg['dia']),
+            'weight' => $w, 'height' => $h,
+        ];
+    }
+    return $out;
+}
+
+/** อ่านค่าตั้งค่า (ปลอดภัยแม้ตาราง settings ยังไม่มี) */
+function get_setting(string $key, $default = null)
+{
+    static $cache = null;
+    if ($cache === null) {
+        try {
+            $cache = [];
+            foreach (db()->query('SELECT k, v FROM settings')->fetchAll() as $row) $cache[$row['k']] = $row['v'];
+        } catch (Throwable $e) { $cache = []; }
+    }
+    return array_key_exists($key, $cache) ? $cache[$key] : $default;
+}
+function target_sys(): int { return (int) get_setting('target_sys', 135); }
+function target_dia(): int { return (int) get_setting('target_dia', 85); }
+
+/** อยู่ในเป้าหมายหรือไม่ (คุมได้) */
+function in_target(?int $sys, ?int $dia): bool
+{
+    return $sys !== null && $dia !== null && $sys < target_sys() && $dia < target_dia();
+}
+
+/** หาไฟล์รูปโปรไฟล์ที่มีอยู่จริง (รองรับ .png .jpg .jpeg .webp) */
+function resolve_profile_photo(array $profile, string $baseDir): ?string
+{
+    $configured = $profile['photo'] ?? '';
+    if ($configured && is_file($baseDir . '/' . $configured)) return $configured;
+    foreach (['assets/profile.png', 'assets/profile.jpg', 'assets/profile.jpeg', 'assets/profile.webp'] as $c) {
+        if (is_file($baseDir . '/' . $c)) return $c;
+    }
+    return null;
+}
+
+/**
+ * โหลดรายการช่วง (phases) เรียงตามวันเริ่ม
+ * ปลอดภัยแม้ตาราง phases ยังไม่ถูกสร้าง (คืน [] )
+ */
+function load_phases(): array
+{
+    try {
+        return db()->query('SELECT * FROM phases ORDER BY start_date ASC, id ASC')->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * หาช่วงที่ครอบคลุมวันที่ที่กำหนด
+ * (ช่วงล่าสุดที่ start_date <= วันที่นั้น)
+ */
+function phase_for_date(array $phases, ?string $date): ?array
+{
+    if (!$date) return null;
+    $found = null;
+    foreach ($phases as $p) {
+        if ($p['start_date'] <= $date) $found = $p;
+        else break;
+    }
+    return $found;
+}
+
+/** คำนวณ BMI จากน้ำหนัก(กก.) และส่วนสูง(ซม.) */
+function calc_bmi($w, $h): ?float
+{
+    $w = (float) $w; $h = (float) $h;
+    if ($w <= 0 || $h <= 0) return null;
+    return round($w / (($h / 100) ** 2), 1);
+}
+
+/** แปลผล BMI (เกณฑ์เอเชีย) => [label, class] */
+function bmi_category(?float $bmi): array
+{
+    if ($bmi === null) return ['-', 'bp-none'];
+    if ($bmi < 18.5) return ['น้ำหนักน้อย', 'bp-elevated'];
+    if ($bmi < 23)   return ['ปกติ', 'bp-normal'];
+    if ($bmi < 25)   return ['ท้วม', 'bp-stage1'];
+    if ($bmi < 30)   return ['อ้วน', 'bp-stage2'];
+    return ['อ้วนมาก', 'bp-crisis'];
+}
