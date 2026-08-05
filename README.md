@@ -17,10 +17,12 @@
 ### 1. เตรียมฐานข้อมูล
 
 ```bash
-mysql -u root -p < schema.sql
+mysql -u root -p < schema.sql   # สร้างฐานข้อมูล + ตาราง
+mysql -u root -p bp_record < seed.sql   # (ไม่บังคับ) นำเข้าข้อมูลตัวอย่าง 136 วัน
 ```
 
 จะได้ฐานข้อมูล `bp_record` และตาราง `bp_readings`
+(`seed.sql` มีข้อมูลบันทึกจริงไว้ให้เริ่มต้น หากไม่ต้องการก็ข้ามได้)
 
 ### 2. ตั้งค่าการเชื่อมต่อ
 
@@ -41,6 +43,39 @@ php -S localhost:8000
 เปิดเบราว์เซอร์ที่ http://localhost:8000
 
 หรือวางไฟล์ทั้งหมดไว้ใน DocumentRoot ของ Apache/Nginx ที่รองรับ PHP
+
+## Deploy อัตโนมัติขึ้น InfinityFree (GitHub Actions)
+
+โปรเจกต์นี้มี workflow `.github/workflows/deploy.yml` ที่จะอัปโหลดไฟล์ทั้งหมด
+ขึ้นโฮสต์ InfinityFree ผ่าน FTP ทุกครั้งที่ push เข้า branch `main`
+(หรือกดรันเองที่แท็บ **Actions → Deploy to InfinityFree → Run workflow**)
+
+### ตั้งค่า GitHub Secrets (ทำครั้งเดียว)
+
+ไปที่ **Settings → Secrets and variables → Actions → New repository secret**
+แล้วเพิ่มค่าต่อไปนี้ (ค่าเหล่านี้ถูกเข้ารหัสและไม่แสดงใน log):
+
+| Secret | ค่า |
+|--------|-----|
+| `FTP_SERVER` | `ftpupload.net` |
+| `FTP_USERNAME` | FTP Username จากหน้า InfinityFree |
+| `FTP_PASSWORD` | FTP Password |
+| `DB_HOST` | `sql105.infinityfree.com` |
+| `DB_NAME` | ชื่อฐานข้อมูลจริง เช่น `if0_XXXXXXXX_bp` |
+| `DB_USER` | MySQL Username |
+| `DB_PASS` | MySQL Password |
+
+> ⚠️ **อย่าใส่รหัสผ่านลงในโค้ดหรือ commit เข้า repo** — ใช้ Secrets เท่านั้น
+> ไฟล์ `includes/config.local.php` (ที่มีค่าจริง) ถูกกันไว้ใน `.gitignore` แล้ว
+
+### สร้างฐานข้อมูลบนโฮสต์ (ทำครั้งเดียว)
+
+InfinityFree ไม่อนุญาตให้สร้างตารางผ่าน `mysql` CLI จากภายนอกโดยตรง ให้ทำผ่าน **phpMyAdmin** ในแผงควบคุม:
+1. สร้าง/เลือกฐานข้อมูล (ชื่อขึ้นต้นด้วย `if0_XXXXXXXX_`)
+2. เปิดแท็บ **SQL** แล้ววางเนื้อหาจาก `schema.sql` (ตัด 3 บรรทัดแรกที่ `CREATE DATABASE` / `USE` ออก เพราะฐานข้อมูลถูกสร้างให้แล้ว) กด **Go**
+3. (ไม่บังคับ) วางเนื้อหาจาก `seed.sql` เพื่อนำเข้าข้อมูลตัวอย่าง 136 วัน แล้วกด **Go**
+
+หลังจากนั้นแค่ merge เข้า `main` เว็บจะถูก deploy ให้อัตโนมัติ 🎉
 
 ## เกณฑ์การแปลผล (ACC/AHA)
 
