@@ -42,18 +42,46 @@ require __DIR__ . '/includes/header.php';
 ?>
 
 <div class="dash">
-  <!-- หัวเรื่อง -->
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-    <div>
-      <div class="text-secondary small mb-1"><i class="bi bi-house-door"></i> Portal <i class="bi bi-chevron-right x-sm"></i> แดชบอร์ด</div>
-      <h1 class="dash-hello mb-0"><?= $greet ?> 👋</h1>
+  <!-- ===== HEADER โปรไฟล์ (ใหญ่ ชัด เท่) ===== -->
+  <section class="profile-hero mb-4">
+    <div class="ph-glow"></div>
+    <div class="ph-main">
+      <div class="ph-photo <?= $hasPhoto ? '' : 'noimg' ?>">
+        <?php if ($hasPhoto): ?>
+          <img src="<?= e($profile['photo']) ?>" alt="<?= e($profile['name']) ?>">
+        <?php else: ?>
+          <i class="bi bi-person-fill"></i>
+        <?php endif; ?>
+        <span class="ph-status"><i class="bi bi-heart-pulse-fill"></i></span>
+      </div>
+      <div class="ph-info">
+        <div class="ph-greet"><?= $greet ?> 👋</div>
+        <h1 class="ph-name"><?= e($profile['name']) ?></h1>
+        <span class="ph-role"><i class="bi bi-patch-check-fill"></i> <?= e($profile['role']) ?></span>
+      </div>
     </div>
-    <div class="d-flex flex-wrap gap-2">
-      <span class="pill-btn"><i class="bi bi-calendar3"></i> <?= $total ? fmt_date($chrono[max(0,$total-7)]['row']['record_date']) . ' – ' . fmt_date($latest['row']['record_date']) : 'ยังไม่มีข้อมูล' ?></span>
-      <a href="index.php" class="pill-btn"><i class="bi bi-table"></i> ตารางบันทึก</a>
-      <a href="index.php#add" class="pill-btn pill-primary" onclick="sessionStorage.setItem('openAdd','1')"><i class="bi bi-plus-lg"></i> เพิ่มบันทึก</a>
+    <div class="ph-side">
+      <div class="ph-stats">
+        <div class="ph-stat">
+          <div class="ph-stat-n"><?= $total ?></div>
+          <div class="ph-stat-l">วันที่บันทึก</div>
+        </div>
+        <div class="ph-stat">
+          <div class="ph-stat-n"><?= e($avgS) ?>/<?= e($avgD) ?></div>
+          <div class="ph-stat-l">ค่าเฉลี่ยรวม</div>
+        </div>
+        <div class="ph-stat">
+          <div class="ph-stat-n"><?= $pctRange ?>%</div>
+          <div class="ph-stat-l">คุมได้</div>
+        </div>
+      </div>
+      <div class="ph-actions">
+        <span class="pill-btn glass"><i class="bi bi-calendar3"></i> <?= $total ? fmt_date($chrono[max(0,$total-7)]['row']['record_date']) . ' – ' . fmt_date($latest['row']['record_date']) : '—' ?></span>
+        <a href="index.php" class="pill-btn glass"><i class="bi bi-table"></i> ตาราง</a>
+        <a href="index.php" class="pill-btn pill-primary"><i class="bi bi-plus-lg"></i> เพิ่มบันทึก</a>
+      </div>
     </div>
-  </div>
+  </section>
 
   <div class="row g-3">
     <!-- ===== คอลัมน์หลัก ===== -->

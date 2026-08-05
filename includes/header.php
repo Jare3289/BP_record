@@ -5,6 +5,9 @@
  */
 $PAGE   = $PAGE   ?? 'บันทึกความดันโลหิต';
 $ACTIVE = $ACTIVE ?? '';
+$profile  = @require __DIR__ . '/profile.php';
+if (!is_array($profile)) $profile = ['name' => 'ผู้ใช้', 'role' => '', 'photo' => 'assets/profile.jpg'];
+$hasPhoto = is_file(__DIR__ . '/../' . $profile['photo']);
 ?>
 <!DOCTYPE html>
 <html lang="th" data-bs-theme="light">
@@ -15,7 +18,9 @@ $ACTIVE = $ACTIVE ?? '';
 <title><?= htmlspecialchars($PAGE) ?> · BP Record</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Noto+Sans+Thai:wght@300..700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link href="assets/style.css" rel="stylesheet">
 </head>
 <body>
@@ -47,9 +52,16 @@ $ACTIVE = $ACTIVE ?? '';
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2">
-        <button class="btn btn-sm btn-theme" id="themeToggle" type="button" title="สลับโหมดสว่าง/มืด">
+        <button class="btn btn-theme" id="themeToggle" type="button" title="สลับโหมดสว่าง/มืด">
           <i class="bi bi-moon-stars-fill"></i>
         </button>
+        <a href="dashboard.php" class="nav-avatar" title="<?= htmlspecialchars($profile['name']) ?>">
+          <?php if ($hasPhoto): ?>
+            <img src="<?= htmlspecialchars($profile['photo']) ?>" alt="<?= htmlspecialchars($profile['name']) ?>">
+          <?php else: ?>
+            <span><?= htmlspecialchars(mb_substr($profile['name'], 0, 1)) ?></span>
+          <?php endif; ?>
+        </a>
       </div>
     </div>
   </div>

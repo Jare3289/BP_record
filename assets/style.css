@@ -21,26 +21,40 @@
   --bs-body-bg: #0b1220;
 }
 
-* { font-family: "Sarabun", system-ui, -apple-system, "Segoe UI", sans-serif; }
+:root {
+  --font-body: "Google Sans", "Noto Sans Thai", "Sarabun", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { font-family: var(--font-body); }
 body { background: var(--bs-body-bg); }
 
-/* ---- Navbar ---- */
+/* ---- Navbar (ใหญ่ เท่ ชัด) ---- */
 .app-navbar {
   background: linear-gradient(100deg, var(--brand-dark), var(--brand));
-  box-shadow: 0 2px 14px rgba(13,148,136,.28);
+  box-shadow: 0 4px 20px rgba(13,148,136,.32);
+  padding-top: .7rem; padding-bottom: .7rem;
 }
 .app-navbar .navbar-brand,
 .app-navbar .nav-link { color: #eafffb !important; }
-.app-navbar .nav-link { border-radius: 8px; padding: .45rem .85rem !important; opacity: .85; transition: .15s; }
-.app-navbar .nav-link:hover { opacity: 1; background: rgba(255,255,255,.12); }
-.app-navbar .nav-link.active { opacity: 1; background: rgba(255,255,255,.2); font-weight: 600; }
-.brand-badge {
-  width: 34px; height: 34px; display: grid; place-items: center;
-  background: rgba(255,255,255,.2); border-radius: 10px; font-size: 18px;
+.app-navbar .nav-link {
+  border-radius: 10px; padding: .55rem 1.05rem !important; opacity: .82;
+  transition: .15s; font-size: 1.02rem; font-weight: 500;
 }
-.brand-text { font-weight: 700; font-size: 1.2rem; letter-spacing: .3px; }
-.btn-theme { background: rgba(255,255,255,.18); color: #fff; border: none; }
+.app-navbar .nav-link .bi { font-size: 1.05rem; }
+.app-navbar .nav-link:hover { opacity: 1; background: rgba(255,255,255,.14); }
+.app-navbar .nav-link.active { opacity: 1; background: rgba(255,255,255,.22); font-weight: 700; box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+.brand-badge {
+  width: 42px; height: 42px; display: grid; place-items: center;
+  background: rgba(255,255,255,.22); border-radius: 13px; font-size: 22px;
+}
+.brand-text { font-weight: 700; font-size: 1.5rem; letter-spacing: .3px; }
+.btn-theme { background: rgba(255,255,255,.18); color: #fff; border: none; width: 42px; height: 42px; border-radius: 12px; }
 .btn-theme:hover { background: rgba(255,255,255,.3); color: #fff; }
+.nav-avatar {
+  width: 44px; height: 44px; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+  border: 2px solid rgba(255,255,255,.7); background: rgba(255,255,255,.2); color: #fff; font-weight: 700; font-size: 1.1rem;
+  text-decoration: none; flex-shrink: 0;
+}
+.nav-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 /* ---- หัวข้อหน้า ---- */
 .page-title { font-weight: 700; font-size: 1.55rem; color: var(--brand-dark); }
@@ -148,6 +162,51 @@ body { background: var(--bs-body-bg); }
 :root { --mint: #57b894; --mint-dark: #3f9e7c; --navy: #2c4a5c; --navy2: #26424f; }
 .dash .x-sm { font-size: .72rem; }
 .dash-hello { font-weight: 700; font-size: 1.9rem; color: var(--bs-body-color); }
+
+/* ===== PROFILE HERO (Header ใหญ่ เท่ ชัด) ===== */
+.profile-hero {
+  position: relative; overflow: hidden;
+  background: linear-gradient(120deg, var(--navy) 0%, #35657c 48%, var(--mint) 128%);
+  border-radius: 26px; padding: 30px 34px; color: #fff;
+  box-shadow: 0 16px 44px rgba(44,74,92,.32);
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 24px;
+}
+.ph-glow { position: absolute; right: -60px; top: -80px; width: 320px; height: 320px;
+  background: radial-gradient(circle, rgba(87,184,148,.55), transparent 70%); pointer-events: none; }
+.ph-main { display: flex; align-items: center; gap: 22px; position: relative; z-index: 1; }
+.ph-photo {
+  width: 96px; height: 96px; border-radius: 24px; overflow: hidden; position: relative; flex-shrink: 0;
+  border: 3px solid rgba(255,255,255,.5); background: rgba(255,255,255,.15); box-shadow: 0 10px 26px rgba(0,0,0,.25);
+}
+.ph-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+.ph-photo.noimg { display: grid; place-items: center; font-size: 46px; color: rgba(255,255,255,.85); }
+.ph-status {
+  position: absolute; right: -6px; bottom: -6px; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--mint); display: grid; place-items: center; font-size: 15px; border: 3px solid #fff; color: #fff;
+}
+.ph-greet { font-size: 1rem; opacity: .9; margin-bottom: 2px; }
+.ph-name { font-size: 2.5rem; font-weight: 700; line-height: 1.05; margin: 0; letter-spacing: .3px; }
+.ph-role { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+  background: rgba(255,255,255,.16); padding: 5px 14px; border-radius: 999px; font-size: .9rem; }
+.ph-role .bi { color: #ffe38a; }
+
+.ph-side { display: flex; flex-direction: column; gap: 14px; align-items: flex-end; position: relative; z-index: 1; }
+.ph-stats { display: flex; gap: 12px; }
+.ph-stat { background: rgba(255,255,255,.12); backdrop-filter: blur(4px); border-radius: 16px; padding: 12px 18px; text-align: center; min-width: 92px; }
+.ph-stat-n { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.ph-stat-l { font-size: .74rem; opacity: .85; margin-top: 4px; }
+.ph-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.pill-btn.glass { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.25); color: #fff; }
+.pill-btn.glass:hover { background: rgba(255,255,255,.28); color: #fff; }
+
+@media (max-width: 991px) {
+  .profile-hero { padding: 24px; }
+  .ph-name { font-size: 2rem; }
+  .ph-side { align-items: stretch; width: 100%; }
+  .ph-stats { justify-content: space-between; }
+  .ph-stat { flex: 1; min-width: 0; }
+  .ph-actions { justify-content: flex-start; }
+}
 
 /* ปุ่ม pill */
 .pill-btn {
