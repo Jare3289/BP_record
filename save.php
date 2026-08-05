@@ -23,6 +23,35 @@ if ($action === 'delete') {
     exit;
 }
 
+/** ---------- จัดการช่วง (phases) ---------- */
+if ($action === 'save_phase') {
+    $pid   = (int) ($_POST['phase_id'] ?? 0);
+    $name  = trim($_POST['name'] ?? '');
+    $start = trim($_POST['start_date'] ?? '');
+    $color = trim($_POST['color'] ?? '#57b894');
+    $pnote = trim($_POST['note'] ?? '') ?: null;
+    if ($name === '' || !strtotime($start)) {
+        header('Location: phases.php?msg=error');
+        exit;
+    }
+    $start = date('Y-m-d', strtotime($start));
+    if ($pid > 0) {
+        db()->prepare('UPDATE phases SET name=?, start_date=?, color=?, note=? WHERE id=?')
+            ->execute([$name, $start, $color, $pnote, $pid]);
+    } else {
+        db()->prepare('INSERT INTO phases (name, start_date, color, note) VALUES (?,?,?,?)')
+            ->execute([$name, $start, $color, $pnote]);
+    }
+    header('Location: phases.php?msg=saved');
+    exit;
+}
+if ($action === 'delete_phase') {
+    $pid = (int) ($_POST['phase_id'] ?? 0);
+    if ($pid > 0) db()->prepare('DELETE FROM phases WHERE id=?')->execute([$pid]);
+    header('Location: phases.php?msg=deleted');
+    exit;
+}
+
 /** ---------- เพิ่ม / แก้ไข ---------- */
 $id   = (int) ($_POST['id'] ?? 0);
 $date = trim($_POST['record_date'] ?? '');
@@ -44,6 +73,12 @@ foreach ($fields as $f) {
     $v = $_POST[$f] ?? '';
     $data[$f] = ($v === '' || !is_numeric($v)) ? null : (int) $v;
 }
+// น้ำหนัก / ส่วนสูง (ทศนิยมได้)
+foreach (['weight', 'height'] as $f) {
+    $v = $_POST[$f] ?? '';
+    $data[$f] = ($v === '' || !is_numeric($v)) ? null : (float) $v;
+}
+$fields = array_merge($fields, ['weight', 'height']);
 $data['note'] = trim($_POST['note'] ?? '') ?: null;
 
 try {

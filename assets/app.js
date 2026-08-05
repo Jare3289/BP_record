@@ -1,6 +1,6 @@
 // ===== ฟอร์มเพิ่ม/แก้ไข (Bootstrap modal) =====
 const FIELDS = ['m1_sys','m1_dia','m1_hr','m2_sys','m2_dia','m2_hr',
-                'n1_sys','n1_dia','n1_hr','n2_sys','n2_dia','n2_hr'];
+                'n1_sys','n1_dia','n1_hr','n2_sys','n2_dia','n2_hr','weight','height'];
 
 function resetForm() {
   const form = document.getElementById('bpForm');
@@ -22,6 +22,41 @@ function editRow(r) {
   document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขบันทึก';
   const modal = new bootstrap.Modal(document.getElementById('formModal'));
   modal.show();
+}
+
+// ===== ช่วงการรักษา (phases) =====
+function resetPhase() {
+  const f = document.querySelector('#phaseModal form');
+  if (f) f.reset();
+  const id = document.getElementById('p-id'); if (id) id.value = '';
+  const t = document.getElementById('phaseTitle'); if (t) t.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มช่วง';
+}
+function editPhase(p) {
+  document.getElementById('p-id').value = p.id || '';
+  document.getElementById('p-name').value = p.name || '';
+  document.getElementById('p-start').value = p.start_date || '';
+  document.getElementById('p-note').value = p.note || '';
+  document.querySelectorAll('#p-colors input[name=color]').forEach(r => { r.checked = (r.value === p.color); });
+  document.getElementById('phaseTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขช่วง';
+  new bootstrap.Modal(document.getElementById('phaseModal')).show();
+}
+
+// ===== ไฮไลต์จุดตามช่วง (หน้ากราฟ scatter) =====
+function highlightPhase(id, el) {
+  document.querySelectorAll('.phase-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.scatter-pt').forEach(c => {
+    if (id === 'all') {
+      c.style.opacity = '1';
+      c.setAttribute('fill', c.dataset.base || '#2c5c7a');
+    } else if (c.dataset.phase === String(id)) {
+      c.style.opacity = '1';
+      c.setAttribute('fill', c.dataset.color || '#57b894');
+    } else {
+      c.style.opacity = '0.12';
+      c.setAttribute('fill', c.dataset.base || '#2c5c7a');
+    }
+  });
 }
 
 // ===== ค้นหาในตาราง =====

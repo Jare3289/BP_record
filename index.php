@@ -3,13 +3,16 @@ require __DIR__ . '/includes/config.php';
 require __DIR__ . '/includes/functions.php';
 
 $rows = db()->query('SELECT * FROM bp_readings ORDER BY record_date DESC, id DESC')->fetchAll();
+$phases = load_phases();
 
 $allSys = $allDia = $allHr = [];
 $prepared = [];
 foreach ($rows as $r) {
     $avg = daily_average($r);
     $bp  = classify_bp($avg['sys'], $avg['dia']);
-    $prepared[] = ['row' => $r, 'avg' => $avg, 'bp' => $bp];
+    $ph  = phase_for_date($phases, $r['record_date']);
+    $bmi = calc_bmi($r['weight'] ?? null, $r['height'] ?? null);
+    $prepared[] = ['row' => $r, 'avg' => $avg, 'bp' => $bp, 'phase' => $ph, 'bmi' => $bmi];
     if ($avg['sys'] !== null) $allSys[] = $avg['sys'];
     if ($avg['dia'] !== null) $allDia[] = $avg['dia'];
     if ($avg['hr']  !== null) $allHr[]  = $avg['hr'];
@@ -122,6 +125,8 @@ require __DIR__ . '/includes/header.php';
             <th colspan="6" class="grp-morning"><i class="bi bi-sunrise"></i> เช้า</th>
             <th colspan="6" class="grp-night"><i class="bi bi-moon-stars"></i> ก่อนนอน</th>
             <th colspan="3" class="grp-avg">ค่าเฉลี่ยรายวัน</th>
+            <th rowspan="2" class="grp-body">น้ำหนัก</th>
+            <th rowspan="2" class="grp-body">BMI</th>
             <th rowspan="2">แปลผล</th>
             <th rowspan="2"></th>
           </tr>
@@ -135,14 +140,17 @@ require __DIR__ . '/includes/header.php';
         </thead>
         <tbody class="text-center">
         <?php if (!$prepared): ?>
-          <tr><td colspan="20" class="text-secondary py-5">
+          <tr><td colspan="22" class="text-secondary py-5">
             <i class="bi bi-inbox fs-3 d-block mb-2"></i> ยังไม่มีข้อมูล — กด “เพิ่มบันทึก” เพื่อเริ่มต้น
           </td></tr>
         <?php else: ?>
-          <?php $seq = $total; foreach ($prepared as $p): $r = $p['row']; $a = $p['avg']; $bp = $p['bp']; ?>
+          <?php $seq = $total; foreach ($prepared as $p): $r = $p['row']; $a = $p['avg']; $bp = $p['bp']; $ph = $p['phase']; $bmi = $p['bmi']; $bmc = bmi_category($bmi); ?>
           <tr data-date="<?= fmt_date($r['record_date']) ?>">
             <td class="text-secondary sticky-col"><?= $seq-- ?></td>
-            <td class="text-nowrap fw-500"><?= fmt_date($r['record_date']) ?></td>
+            <td class="text-nowrap fw-500">
+              <?= fmt_date($r['record_date']) ?>
+              <?php if ($ph): ?><br><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
+            </td>
             <td><?= num($r['m1_sys']) ?></td><td><?= num($r['m1_dia']) ?></td><td class="text-secondary"><?= num($r['m1_hr']) ?></td>
             <td><?= num($r['m2_sys']) ?></td><td><?= num($r['m2_dia']) ?></td><td class="text-secondary"><?= num($r['m2_hr']) ?></td>
             <td><?= num($r['n1_sys']) ?></td><td><?= num($r['n1_dia']) ?></td><td class="text-secondary"><?= num($r['n1_hr']) ?></td>
@@ -150,6 +158,8 @@ require __DIR__ . '/includes/header.php';
             <td class="fw-bold avg-cell <?= e($bp['class']) ?>"><?= num($a['sys']) ?></td>
             <td class="fw-bold"><?= num($a['dia']) ?></td>
             <td class="fw-bold"><?= num($a['hr']) ?></td>
+            <td class="text-secondary"><?= isset($r['weight']) && $r['weight'] !== null ? e(fmt_num($r['weight'])) : '-' ?></td>
+            <td><?= $bmi !== null ? '<span class="badge-result '.e($bmc[1]).'">'.e($bmi).'</span>' : '<span class="text-secondary">-</span>' ?></td>
             <td class="text-start"><span class="badge-result <?= e($bp['class']) ?>"><?= e($bp['label']) ?></span></td>
             <td class="text-nowrap">
               <button type="button" class="btn btn-sm btn-icon btn-outline-secondary"
@@ -226,6 +236,20 @@ require __DIR__ . '/includes/header.php';
                 </div>
                 <?php endforeach; ?>
               </div>
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-6 col-md-4">
+              <label class="form-label fw-500"><i class="bi bi-speedometer2"></i> น้ำหนัก (กก.)</label>
+              <input type="number" step="0.1" min="0" max="400" name="weight" id="f-weight" class="form-control" placeholder="เช่น 68.5">
+            </div>
+            <div class="col-6 col-md-4">
+              <label class="form-label fw-500"><i class="bi bi-rulers"></i> ส่วนสูง (ซม.)</label>
+              <input type="number" step="0.1" min="0" max="260" name="height" id="f-height" class="form-control" placeholder="เช่น 170">
+            </div>
+            <div class="col-12 col-md-4 d-flex align-items-end">
+              <div class="text-secondary small mb-2"><i class="bi bi-info-circle"></i> ไม่บังคับ — ใช้คำนวณ BMI และกราฟน้ำหนัก</div>
             </div>
           </div>
         </div>

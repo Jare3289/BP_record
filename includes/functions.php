@@ -81,3 +81,57 @@ function num(?int $n): string
 {
     return $n === null ? '-' : (string) $n;
 }
+
+/** จัดรูปแบบเลขทศนิยม ตัดศูนย์ท้ายที่ไม่จำเป็น (เช่น 170.00 -> 170, 70.50 -> 70.5) */
+function fmt_num($v): string
+{
+    if ($v === null || $v === '') return '-';
+    return rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.');
+}
+
+/**
+ * โหลดรายการช่วง (phases) เรียงตามวันเริ่ม
+ * ปลอดภัยแม้ตาราง phases ยังไม่ถูกสร้าง (คืน [] )
+ */
+function load_phases(): array
+{
+    try {
+        return db()->query('SELECT * FROM phases ORDER BY start_date ASC, id ASC')->fetchAll();
+    } catch (Throwable $e) {
+        return [];
+    }
+}
+
+/**
+ * หาช่วงที่ครอบคลุมวันที่ที่กำหนด
+ * (ช่วงล่าสุดที่ start_date <= วันที่นั้น)
+ */
+function phase_for_date(array $phases, ?string $date): ?array
+{
+    if (!$date) return null;
+    $found = null;
+    foreach ($phases as $p) {
+        if ($p['start_date'] <= $date) $found = $p;
+        else break;
+    }
+    return $found;
+}
+
+/** คำนวณ BMI จากน้ำหนัก(กก.) และส่วนสูง(ซม.) */
+function calc_bmi($w, $h): ?float
+{
+    $w = (float) $w; $h = (float) $h;
+    if ($w <= 0 || $h <= 0) return null;
+    return round($w / (($h / 100) ** 2), 1);
+}
+
+/** แปลผล BMI (เกณฑ์เอเชีย) => [label, class] */
+function bmi_category(?float $bmi): array
+{
+    if ($bmi === null) return ['-', 'bp-none'];
+    if ($bmi < 18.5) return ['น้ำหนักน้อย', 'bp-elevated'];
+    if ($bmi < 23)   return ['ปกติ', 'bp-normal'];
+    if ($bmi < 25)   return ['ท้วม', 'bp-stage1'];
+    if ($bmi < 30)   return ['อ้วน', 'bp-stage2'];
+    return ['อ้วนมาก', 'bp-crisis'];
+}

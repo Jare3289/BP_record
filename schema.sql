@@ -29,10 +29,25 @@ CREATE TABLE IF NOT EXISTS `bp_readings` (
   `n2_dia`  SMALLINT UNSIGNED NULL,
   `n2_hr`   SMALLINT UNSIGNED NULL,
 
+  `weight`      DECIMAL(5,2) NULL COMMENT 'น้ำหนัก (กก.)',
+  `height`      DECIMAL(5,2) NULL COMMENT 'ส่วนสูง (ซม.)',
+
   `note`        VARCHAR(255) NULL COMMENT 'หมายเหตุ',
   `created_at`  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
   PRIMARY KEY (`id`),
   UNIQUE KEY `uniq_date` (`record_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ช่วงการรักษา (เช่น ก่อนกินยา / กินยาช่วงที่ 1)
+CREATE TABLE IF NOT EXISTS `phases` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`       VARCHAR(100) NOT NULL,
+  `start_date` DATE NOT NULL,
+  `color`      VARCHAR(20) NOT NULL DEFAULT '#57b894',
+  `note`       VARCHAR(255) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_start` (`start_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

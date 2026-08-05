@@ -50,6 +50,11 @@ $hasPhoto = is_file(__DIR__ . '/../' . $profile['photo']);
             <i class="bi bi-graph-up"></i> กราฟแนวโน้ม
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link <?= $ACTIVE === 'phases' ? 'active' : '' ?>" href="phases.php">
+            <i class="bi bi-signpost-split"></i> ช่วงการรักษา
+          </a>
+        </li>
       </ul>
       <div class="d-flex align-items-center gap-2">
         <button class="btn btn-theme" id="themeToggle" type="button" title="สลับโหมดสว่าง/มืด">
