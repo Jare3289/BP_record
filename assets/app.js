@@ -124,6 +124,43 @@ document.addEventListener('DOMContentLoaded', () => {
   box.addEventListener('click', () => hide(null));
 });
 
+// ===== Tooltip กลางสำหรับทุกกราฟ (hover/แตะ แล้วเห็นค่า) =====
+(function () {
+  let tip = null;
+  const ensure = () => {
+    if (!tip) { tip = document.createElement('div'); tip.className = 'g-tip'; document.body.appendChild(tip); }
+    return tip;
+  };
+  const textOf = (el) => {
+    if (!el || !el.getAttribute) return null;
+    const d = el.getAttribute('data-tip');
+    if (d) return d;
+    const tag = (el.tagName || '').toLowerCase();
+    if (['circle', 'rect', 'path', 'polyline', 'line'].includes(tag) && el.querySelector) {
+      const t = el.querySelector('title');
+      if (t) return t.textContent;
+    }
+    return null;
+  };
+  const move = (e) => {
+    let el = e.target, txt = null, hop = 0;
+    while (el && hop < 3) { txt = textOf(el); if (txt) break; el = el.parentElement; hop++; }
+    const t = ensure();
+    if (txt) {
+      t.textContent = txt;
+      t.style.left = e.clientX + 'px';
+      t.style.top = (e.clientY - 14) + 'px';
+      t.classList.add('show');
+    } else {
+      t.classList.remove('show');
+    }
+  };
+  document.addEventListener('pointermove', move, { passive: true });
+  document.addEventListener('pointerdown', move, { passive: true });
+  document.addEventListener('pointerleave', () => { if (tip) tip.classList.remove('show'); });
+  document.addEventListener('scroll', () => { if (tip) tip.classList.remove('show'); }, { passive: true });
+})();
+
 // ===== Pixel chart: สลับปี =====
 function showYear(y, el) {
   document.querySelectorAll('.year-chip').forEach(c => c.classList.remove('active'));

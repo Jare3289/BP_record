@@ -354,8 +354,21 @@ body { background: var(--bs-body-bg); }
 .bar-cmp .bar-lbl { font-size: 12px; font-weight: 600; fill: var(--bs-body-color); }
 .bar-cmp .axl { font-size: 11px; fill: var(--bs-secondary-color); }
 
-/* ===== จอเครื่องวัดความดัน (phase monitor) ===== */
-.monitor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+/* ===== tooltip กลางทุกกราฟ ===== */
+.g-tip { position: fixed; transform: translate(-50%, -100%); background: #0f172a; color: #fff;
+  padding: 5px 11px; border-radius: 8px; font-size: .78rem; pointer-events: none; opacity: 0;
+  transition: opacity .08s; z-index: 3000; white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.32); }
+.g-tip.show { opacity: 1; }
+.g-tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #0f172a; }
+.tip-pt { cursor: pointer; } .tip-pt:hover { r: 5.5; }
+.px-cell { cursor: pointer; }
+.barchart .bar { cursor: pointer; }
+.gauge-svg path { cursor: pointer; }
+
+/* ===== จอเครื่องวัดความดัน (phase monitor) — เต็มช่อง ===== */
+.monitor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.bp-monitor { display: flex; flex-direction: column; }
 .bp-monitor { border-radius: 18px; padding: 4px; background: linear-gradient(160deg, color-mix(in srgb, var(--pc) 55%, #1a2b33), #16232a); box-shadow: 0 8px 22px rgba(15,23,42,.22); }
 .mon-head { color: #fff; font-size: .82rem; font-weight: 600; display: flex; align-items: center; gap: 6px; padding: 8px 12px 6px; }
 .mon-head .mon-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 8px var(--pc); }
@@ -479,16 +492,17 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 .dev-status { font-size: .74rem; color: #7CFFB2; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 5px; }
 .dev-status.bp-elevated { color: #cde86a; } .dev-status.bp-stage1 { color: #ffd36a; }
 .dev-status.bp-stage2 { color: #ff9a6a; } .dev-status.bp-crisis { color: #ff7a90; }
-.dev-main { display: flex; align-items: flex-end; gap: 10px; }
-.dev-col { display: flex; flex-direction: column; flex: 1; }
-.dev-sep { width: 2px; align-self: stretch; background: linear-gradient(#24463a, transparent); }
-.dev-lbl { font-size: .6rem; color: #5fd0a8; letter-spacing: 2px; }
-.dev-val { font-size: 3.1rem; font-weight: 800; color: #7CFFB2; line-height: .95; text-shadow: 0 0 14px rgba(124,255,178,.5); font-variant-numeric: tabular-nums; }
-.dev-u { font-size: .58rem; color: #4b6b60; }
-.dev-pulse { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #24463a; color: #ff9ab6; }
-.dev-pulse .dev-lbl { color: #f08aa8; }
-.dev-pulse .dev-pv { font-size: 1.5rem; font-weight: 800; text-shadow: 0 0 10px rgba(255,154,182,.4); }
-.dev-pulse .beat { animation: beat 1s ease-in-out infinite; }
+.dev-rows { flex-grow: 1; display: flex; flex-direction: column; justify-content: space-around; margin: 8px 0; }
+.dev-r { display: flex; align-items: baseline; gap: 10px; }
+.dev-r.pulse { border-top: 1px dashed #24463a; padding-top: 12px; margin-top: 6px; }
+.dev-lbl { font-size: .74rem; color: #5fd0a8; letter-spacing: 2px; width: 54px; flex-shrink: 0; }
+.dev-r.pulse .dev-lbl { color: #f08aa8; }
+.dev-val { font-size: 3.6rem; font-weight: 800; color: #7CFFB2; line-height: .85; margin-left: auto;
+  text-shadow: 0 0 18px rgba(124,255,178,.5); font-variant-numeric: tabular-nums; }
+.dev-val.pv { font-size: 2.3rem; color: #ff9ab6; text-shadow: 0 0 12px rgba(255,154,182,.45); }
+.dev-r .dev-u { width: 44px; text-align: right; }
+.dev-u { font-size: .6rem; color: #4b6b60; }
+.dev-r.pulse .beat { color: #ff9ab6; animation: beat 1s ease-in-out infinite; }
 @keyframes beat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} }
 .dev-foot { margin-top: 10px; font-size: .68rem; color: #6b8f82; }
 .dev-empty { text-align: center; color: #4b6b60; font-size: 2rem; font-weight: 800; padding: 20px 0; }
@@ -505,13 +519,16 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 .acc-title { font-weight: 700; font-size: .92rem; margin-bottom: 10px; }
 .acc-title span { color: var(--brand-dark); font-size: .78rem; background: rgba(13,148,136,.12); padding: 1px 8px; border-radius: 999px; }
 [data-bs-theme="dark"] .acc-title span { color: var(--brand-light); }
-.acc-head-lbl { display: flex; font-size: .64rem; color: var(--bs-secondary-color); margin-top: 4px; }
-.acc-head-lbl span:first-child { flex: 1; } .acc-head-lbl span { width: 58px; text-align: center; }
-.acc-table { width: 100%; font-size: .82rem; }
-.acc-table td { padding: 5px 2px; border-bottom: 1px solid var(--bs-border-color); }
-.acc-table tr:last-child td { border-bottom: none; }
-.acc-table td:first-child { text-align: left; } .acc-table td:not(:first-child) { text-align: center; width: 58px; color: var(--bs-secondary-color); font-variant-numeric: tabular-nums; }
-.acc-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+.acc-ref { display: flex; flex-direction: column; }
+.acc-table { width: 100%; font-size: .84rem; table-layout: fixed; flex-grow: 1; }
+.acc-table thead th { font-size: .68rem; color: var(--bs-secondary-color); font-weight: 600; text-align: center; padding-bottom: 7px; border-bottom: 2px solid var(--bs-border-color); }
+.acc-table thead th:first-child { text-align: left; width: 46%; }
+.acc-table tbody td { padding: 9px 2px; border-bottom: 1px solid var(--bs-border-color); }
+.acc-table tbody tr:last-child td { border-bottom: none; }
+.acc-table td:first-child { text-align: left; }
+.acc-table td:not(:first-child) { text-align: center; color: var(--bs-secondary-color); font-variant-numeric: tabular-nums; }
+.acc-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; }
+.acc-note { font-size: .68rem; color: var(--bs-secondary-color); margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--bs-border-color); }
 
 /* ---- footer ---- */
 .app-foot { margin-top: 34px; padding: 18px 0; color: var(--bs-secondary-color); font-size: .8rem; }

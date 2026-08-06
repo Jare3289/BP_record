@@ -111,8 +111,8 @@ function svg_line(array $pts, array $series, float $ymin, float $ymax, array $gr
         // จุด marker
         foreach ($pts as $i => $p) {
             if (($p[$key] ?? null) === null) continue;
-            $out .= sprintf('<circle cx="%.1f" cy="%.1f" r="3" fill="#fff" stroke="%s" stroke-width="2"><title>%s · %s</title></circle>',
-                $x($i), $y($p[$key]), $color, fmt_date($p['date']), $p[$key]);
+            $out .= sprintf('<circle class="tip-pt" cx="%.1f" cy="%.1f" r="3.5" fill="#fff" stroke="%s" stroke-width="2" data-tip="%s"/>',
+                $x($i), $y($p[$key]), $color, htmlspecialchars(fmt_date($p['date']) . ' · ' . $p[$key], ENT_QUOTES));
         }
     }
     foreach ($pts as $i => $p) {
@@ -203,7 +203,7 @@ require __DIR__ . '/includes/header.php';
 
   <!-- เปรียบเทียบรายช่วง = จอเครื่องวัดความดัน -->
   <div class="col-12 col-xl-5">
-    <div class="card app-card h-100">
+    <div class="card app-card">
       <div class="card-header"><i class="bi bi-activity"></i> ค่าเฉลี่ยตามช่วง (จอเครื่องวัด)</div>
       <div class="card-body">
         <?php if (!$monitors): ?>

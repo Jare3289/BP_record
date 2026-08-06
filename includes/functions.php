@@ -190,6 +190,7 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
 {
     $monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
+    $lvlName  = [0=>'ปกติ',1=>'สูงเล็กน้อย',2=>'ระยะที่ 1',3=>'ระยะที่ 2',4=>'วิกฤต'];
     $h = '';
     foreach ($years as $y) {
         $h .= '<div class="pixel-wrap ' . ((string)$y === (string)$curYear ? '' : 'd-none') . '" data-year="' . $y . '"><table class="pixel-grid"><thead><tr><th></th>';
@@ -202,7 +203,8 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
                 $ds = sprintf('%04d-%02d-%02d', $y, $mo, $day);
                 $lv = $dateLevel[$ds] ?? null;
                 $cls = $lv === null ? 'px-empty' : ($lvlClass[$lv] ?? 'px-empty');
-                $h .= '<td class="px-cell ' . $cls . '" title="' . date('j/n/Y', strtotime($ds)) . '"></td>';
+                $tip = date('j/n/Y', strtotime($ds)) . ' · ' . ($lv === null ? 'ไม่มีข้อมูล' : ($lvlName[$lv] ?? ''));
+                $h .= '<td class="px-cell ' . $cls . '" data-tip="' . htmlspecialchars($tip, ENT_QUOTES) . '"></td>';
             }
             $h .= '</tr>';
         }

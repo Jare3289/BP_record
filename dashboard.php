@@ -90,12 +90,11 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
             <div class="dev-screen">
               <?php if ($latest): ?>
               <div class="dev-status <?= e($latest['bp']['class']) ?>"><i class="bi bi-record-circle"></i> <?= e($latest['bp']['label']) ?></div>
-              <div class="dev-main">
-                <div class="dev-col"><span class="dev-lbl">SYS</span><span class="dev-val"><?= num($latest['avg']['sys']) ?></span><span class="dev-u">mmHg</span></div>
-                <div class="dev-sep"></div>
-                <div class="dev-col"><span class="dev-lbl">DIA</span><span class="dev-val"><?= num($latest['avg']['dia']) ?></span><span class="dev-u">mmHg</span></div>
+              <div class="dev-rows">
+                <div class="dev-r"><span class="dev-lbl">SYS</span><span class="dev-val"><?= num($latest['avg']['sys']) ?></span><span class="dev-u">mmHg</span></div>
+                <div class="dev-r"><span class="dev-lbl">DIA</span><span class="dev-val"><?= num($latest['avg']['dia']) ?></span><span class="dev-u">mmHg</span></div>
+                <div class="dev-r pulse"><span class="dev-lbl">PULSE</span><i class="bi bi-heart-fill beat"></i><span class="dev-val pv"><?= num($latest['avg']['hr']) ?></span><span class="dev-u">/min</span></div>
               </div>
-              <div class="dev-pulse"><span class="dev-lbl">PULSE</span> <i class="bi bi-heart-fill beat"></i> <span class="dev-pv"><?= num($latest['avg']['hr']) ?></span> <span class="dev-u">/min</span></div>
               <div class="dev-foot"><i class="bi bi-calendar-check"></i> <?= fmt_date($latest['date']) ?> · <?= count($latest['readings']) ?> ครั้ง</div>
               <?php else: ?>
               <div class="dev-empty">-- / --<div class="dev-u mt-2">ยังไม่มีข้อมูล</div></div>
@@ -140,7 +139,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
             ?>
             <div class="gauge-wrap"><svg viewBox="0 0 260 150" class="gauge-svg">
               <path d="<?= $arc(0,1) ?>" fill="none" stroke="var(--bs-tertiary-bg)" stroke-width="<?= $sw ?>" stroke-linecap="round"/>
-              <?php $acc=0; foreach($segments as $sg){ if($sg['n']<=0)continue; $f0=$acc/$sumSeg;$acc+=$sg['n'];$f1=$acc/$sumSeg; echo '<path d="'.$arc($f0,$f1).'" fill="none" stroke="'.$sg['c'].'" stroke-width="'.$sw.'" stroke-linecap="round"/>'; } ?>
+              <?php $acc=0; foreach($segments as $sg){ if($sg['n']<=0)continue; $f0=$acc/$sumSeg;$acc+=$sg['n'];$f1=$acc/$sumSeg; echo '<path d="'.$arc($f0,$f1).'" fill="none" stroke="'.$sg['c'].'" stroke-width="'.$sw.'" stroke-linecap="round" data-tip="'.htmlspecialchars($sg['label'].' · '.$sg['n'].' วัน',ENT_QUOTES).'"/>'; } ?>
               <text x="130" y="112" text-anchor="middle" class="gauge-num"><?= $total ?></text>
               <text x="130" y="132" text-anchor="middle" class="gauge-cap">วันที่บันทึก</text>
             </svg></div>
@@ -163,7 +162,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
             <div class="barchart">
               <?php foreach (array_slice($days,-16) as $d): $s=$d['avg']['sys'];$dd=$d['avg']['dia'];
                 $ok=in_target($s,$dd); $h=$s===null?6:max(10,min(100,($s-90)/80*100)); ?>
-                <div class="bar <?= $ok?'ok':'no' ?>" style="height:<?= round($h) ?>%" title="<?= fmt_date($d['date']) ?> · <?= num($s) ?>/<?= num($dd) ?>"></div>
+                <div class="bar <?= $ok?'ok':'no' ?>" style="height:<?= round($h) ?>%" data-tip="<?= e(fmt_date($d['date']).' · '.num($s).'/'.num($dd)) ?>"></div>
               <?php endforeach; ?>
             </div>
             <div class="d-flex gap-3 mt-2 x-sm text-secondary">
@@ -192,7 +191,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
                 echo '<path d="'.$areaD.'" fill="url(#gS)"/>';
                 echo '<path d="'.$mk('dia').'" fill="none" stroke="#2c5c7a" stroke-width="2.5" stroke-linejoin="round"/>';
                 echo '<path d="'.$mk('sys').'" fill="none" stroke="#57b894" stroke-width="3" stroke-linejoin="round"/>';
-                foreach($pts as $i=>$p)echo '<circle cx="'.sprintf('%.1f',$lx($i)).'" cy="'.sprintf('%.1f',$ly($p['sys'])).'" r="3.5" fill="#fff" stroke="#57b894" stroke-width="2"><title>'.fmt_date($p['date']).' บน '.$p['sys'].'</title></circle>';
+                foreach($pts as $i=>$p)echo '<circle class="tip-pt" cx="'.sprintf('%.1f',$lx($i)).'" cy="'.sprintf('%.1f',$ly($p['sys'])).'" r="4" fill="#fff" stroke="#57b894" stroke-width="2" data-tip="'.htmlspecialchars(fmt_date($p['date']).' · บน '.$p['sys'].'/'.$p['dia'],ENT_QUOTES).'"/>';
                 $n=count($pts);foreach($pts as $i=>$p){if($n>1&&$i%max(1,intval($n/7))!==0&&$i!==$n-1)continue;echo '<text x="'.sprintf('%.1f',$lx($i)).'" y="'.($lT+$lph+22).'" text-anchor="middle" class="axl">'.date('j/n',strtotime($p['date'])).'</text>';}
                 echo '</svg></div>';
               } else echo '<p class="text-center text-secondary py-4">ยังไม่มีข้อมูล</p>';
@@ -234,16 +233,19 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
       </div>
       <!-- เกณฑ์ ACC/AHA -->
       <div class="widget" data-widget="ref">
-      <div class="soft-card acc-ref mt-3">
+      <div class="soft-card acc-ref mt-3 h-100">
         <div class="acc-title"><i class="bi bi-clipboard2-heart"></i> เกณฑ์การแปลผล <span>ACC/AHA</span></div>
         <table class="acc-table">
+          <thead><tr><th>ระดับ</th><th>บน</th><th>ล่าง</th></tr></thead>
+          <tbody>
           <tr><td><span class="acc-dot" style="background:#16a34a"></span> ปกติ</td><td>&lt;120</td><td>&lt;80</td></tr>
           <tr><td><span class="acc-dot" style="background:#65a30d"></span> สูงเล็กน้อย</td><td>120–129</td><td>&lt;80</td></tr>
           <tr><td><span class="acc-dot" style="background:#d99a1a"></span> ระยะที่ 1</td><td>130–139</td><td>80–89</td></tr>
           <tr><td><span class="acc-dot" style="background:#d1603a"></span> ระยะที่ 2</td><td>≥140</td><td>≥90</td></tr>
           <tr><td><span class="acc-dot" style="background:#b91c1c"></span> วิกฤต</td><td>≥180</td><td>≥120</td></tr>
+          </tbody>
         </table>
-        <div class="acc-head-lbl"><span>ระดับ</span><span>บน</span><span>ล่าง</span></div>
+        <div class="acc-note"><i class="bi bi-info-circle"></i> หน่วย mmHg · เข้าเกณฑ์เมื่อค่าใดค่าหนึ่งถึงระดับ</div>
       </div>
       </div>
     </div>
