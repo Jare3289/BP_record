@@ -1,5 +1,11 @@
 -- ข้อมูลจำลอง 15/7–3/8/2026 สำหรับตาราง readings (ป่วยหนัก 27–29/7 แล้วค่อย ๆ กลับมาปกติ)
 -- นำเข้า: mysql -u USER -p bp_record < seed_extra.sql (หรือ phpMyAdmin -> SQL)
+-- ปลอดภัย: ลบข้อมูลช่วงนี้ก่อน (กันซ้ำ) แล้วค่อยใส่ใหม่ — รันซ้ำได้ไม่มีวันซ้ำ
+-- (ไม่แตะวันที่ 22/7 ซึ่งเป็นข้อมูลจริงเดิม)
+
+DELETE FROM `readings`
+  WHERE `record_date` BETWEEN '2026-07-15' AND '2026-08-03'
+    AND `record_date` <> '2026-07-22';
 
 INSERT INTO `readings` (`record_date`,`period`,`sys`,`dia`,`hr`) VALUES
 ('2026-07-15', 'morning', 128, 83, 70),
