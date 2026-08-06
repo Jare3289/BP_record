@@ -354,6 +354,59 @@ body { background: var(--bs-body-bg); }
 .bar-cmp .bar-lbl { font-size: 12px; font-weight: 600; fill: var(--bs-body-color); }
 .bar-cmp .axl { font-size: 11px; fill: var(--bs-secondary-color); }
 
+/* ===== จอเครื่องวัดความดัน (phase monitor) ===== */
+.monitor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+.bp-monitor { border-radius: 18px; padding: 4px; background: linear-gradient(160deg, color-mix(in srgb, var(--pc) 55%, #1a2b33), #16232a); box-shadow: 0 8px 22px rgba(15,23,42,.22); }
+.mon-head { color: #fff; font-size: .82rem; font-weight: 600; display: flex; align-items: center; gap: 6px; padding: 8px 12px 6px; }
+.mon-head .mon-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--pc); box-shadow: 0 0 8px var(--pc); }
+.mon-days { margin-left: auto; font-size: .68rem; opacity: .7; font-weight: 400; }
+.mon-screen { background: #0e1a16; border-radius: 14px; margin: 0 4px 4px; padding: 12px 14px; font-family: "Google Sans", ui-monospace, monospace; box-shadow: inset 0 2px 10px rgba(0,0,0,.5); }
+.mon-row { display: flex; align-items: baseline; gap: 8px; }
+.mon-row + .mon-row { margin-top: 2px; }
+.mon-lbl { font-size: .64rem; color: #5fd0a8; letter-spacing: 1px; width: 38px; flex-shrink: 0; }
+.mon-row.pulse .mon-lbl { color: #f08aa8; }
+.mon-val { font-size: 2rem; font-weight: 800; color: #7CFFB2; line-height: 1; margin-left: auto; text-shadow: 0 0 10px rgba(124,255,178,.45); font-variant-numeric: tabular-nums; }
+.mon-val.sm { font-size: 1.4rem; color: #ff9ab6; text-shadow: 0 0 10px rgba(255,154,182,.4); }
+.mon-unit { font-size: .58rem; color: #4b6b60; width: 34px; text-align: right; }
+.mon-result { margin-top: 8px; text-align: center; font-size: .68rem; color: #a7f3d0; border-top: 1px dashed #24463a; padding-top: 6px; }
+
+/* ===== scatter tooltip ===== */
+.chart-box { position: relative; }
+.scatter-tip { position: absolute; transform: translate(-50%, -100%); background: #0f172a; color: #fff;
+  padding: 6px 10px; border-radius: 9px; font-size: .78rem; line-height: 1.35; pointer-events: none;
+  opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 5; box-shadow: 0 6px 18px rgba(0,0,0,.3); }
+.scatter-tip.show { opacity: 1; }
+.scatter-tip .st-date { color: #cbd5e1; font-size: .7rem; }
+.scatter-tip .st-ph { color: #7CFFB2; font-size: .7rem; }
+.scatter-tip::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%);
+  border: 5px solid transparent; border-top-color: #0f172a; }
+
+/* ===== reading chips (ตารางแบบ 1 แถว/วัน) ===== */
+.day-readings { display: flex; flex-wrap: wrap; gap: 8px; }
+.rc { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--bs-border-color);
+  border-radius: 12px; padding: 5px 6px 5px 10px; background: var(--bs-body-bg); }
+.rc .rc-per { font-size: .68rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.rc .rc-bp { font-weight: 700; font-size: .92rem; }
+.rc .rc-bp .sep { opacity: .5; font-weight: 400; margin: 0 1px; }
+.rc .rc-hr { font-size: .72rem; color: var(--bs-secondary-color); }
+.rc .rc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.rc-acts { display: inline-flex; gap: 2px; }
+.rc-acts button { border: none; background: transparent; color: var(--bs-secondary-color); padding: 2px 4px; border-radius: 6px; cursor: pointer; font-size: .82rem; }
+.rc-acts button:hover { background: var(--bs-tertiary-bg); color: var(--bs-body-color); }
+.rc-acts .del:hover { color: #dc2626; }
+.rc-add { border: 1px dashed var(--bs-border-color); background: transparent; color: var(--bs-secondary-color);
+  border-radius: 12px; width: 34px; cursor: pointer; align-self: stretch; }
+.rc-add:hover { border-color: var(--mint); color: var(--mint); background: rgba(87,184,148,.08); }
+.avg-pill { display: inline-block; font-weight: 700; font-size: 1rem; padding: 3px 12px; border-radius: 999px; }
+.avg-pill.bp-normal { background: rgba(22,163,74,.16); color: #15803d; }
+.avg-pill.bp-elevated { background: rgba(101,163,13,.16); color: #4d7c0f; }
+.avg-pill.bp-stage1 { background: rgba(217,154,26,.2); color: #92400e; }
+.avg-pill.bp-stage2 { background: rgba(209,96,58,.2); color: #9a3412; }
+.avg-pill.bp-crisis { background: rgba(185,28,28,.22); color: #991b1b; }
+.avg-pill.bp-none { background: var(--bs-tertiary-bg); color: var(--bs-secondary-color); }
+.reading-table .day-start td { border-top: 1px solid var(--bs-border-color); }
+.reading-table td { padding-top: 12px; padding-bottom: 12px; }
+
 /* BMI badge */
 .bmi-badge { width: 78px; height: 78px; border-radius: 20px; flex-shrink: 0;
   background: linear-gradient(150deg, var(--mint), var(--navy)); color: #fff;
@@ -365,8 +418,9 @@ body { background: var(--bs-body-bg); }
 .pixel-wrap { overflow-x: auto; }
 .pixel-grid { border-collapse: separate; border-spacing: 3px; margin: 4px auto 0; }
 .pixel-grid th { font-size: .68rem; color: var(--bs-secondary-color); font-weight: 600; text-align: center; padding: 0 1px 3px; }
-.pixel-grid .px-day { font-size: .62rem; color: var(--bs-secondary-color); text-align: right; padding-right: 4px; min-width: 18px; }
-.px-cell { width: 15px; height: 15px; border-radius: 4px; display: inline-block; background: var(--bs-tertiary-bg); }
+.pixel-grid .px-dnum { font-size: .56rem; min-width: 15px; }
+.pixel-grid .px-month { font-size: .68rem; color: var(--bs-secondary-color); font-weight: 600; text-align: right; padding-right: 6px; white-space: nowrap; }
+.px-cell { width: 15px; height: 15px; border-radius: 4px; background: var(--bs-tertiary-bg); }
 td.px-cell { padding: 0; }
 .px-void { width: 15px; height: 15px; }
 .px-empty { background: color-mix(in srgb, var(--bs-secondary-color) 14%, transparent); }
@@ -378,7 +432,7 @@ td.px-cell { padding: 0; }
 .px-cell:hover { outline: 2px solid var(--mint); outline-offset: 1px; }
 .pixel-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; font-size: .74rem; color: var(--bs-secondary-color); }
 .pixel-legend span { display: inline-flex; align-items: center; gap: 5px; }
-.pixel-legend .px-cell { width: 13px; height: 13px; }
+.pixel-legend .px-cell { width: 13px; height: 13px; display: inline-block; }
 .year-chips { display: inline-flex; gap: 4px; }
 .year-chip { border: 1px solid var(--bs-border-color); background: var(--bs-body-bg); border-radius: 8px; padding: 1px 9px; font-size: .78rem; cursor: pointer; }
 .year-chip.active { background: var(--mint); color: #fff; border-color: transparent; }

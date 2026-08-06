@@ -10,6 +10,13 @@ function resetForm() {
   if (title) title.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มบันทึก';
 }
 
+function addForDay(date) {
+  resetForm();
+  const dt = document.getElementById('f-date');
+  if (dt && date) dt.value = date;
+  new bootstrap.Modal(document.getElementById('formModal')).show();
+}
+
 function editRow(r) {
   document.getElementById('f-id').value = r.id || '';
   document.getElementById('f-date').value = r.record_date || '';
@@ -41,23 +48,59 @@ function editPhase(p) {
   new bootstrap.Modal(document.getElementById('phaseModal')).show();
 }
 
-// ===== ไฮไลต์จุดตามช่วง (หน้ากราฟ scatter) =====
-function highlightPhase(id, el) {
-  document.querySelectorAll('.phase-chip').forEach(c => c.classList.remove('active'));
-  if (el) el.classList.add('active');
+// ===== ไฮไลต์จุดตามช่วง (เลือกได้หลายช่วง) =====
+const activePhases = new Set();
+function renderScatter() {
+  const none = activePhases.size === 0;
+  const chipAll = document.getElementById('chip-all');
+  if (chipAll) chipAll.classList.toggle('active', none);
+  document.querySelectorAll('.phase-chip[data-phase]').forEach(c => {
+    c.classList.toggle('active', activePhases.has(c.dataset.phase));
+  });
   document.querySelectorAll('.scatter-pt').forEach(c => {
-    if (id === 'all') {
+    if (none) {
       c.style.opacity = '1';
       c.setAttribute('fill', c.dataset.base || '#2c5c7a');
-    } else if (c.dataset.phase === String(id)) {
+    } else if (activePhases.has(c.dataset.phase)) {
       c.style.opacity = '1';
       c.setAttribute('fill', c.dataset.color || '#57b894');
     } else {
-      c.style.opacity = '0.12';
+      c.style.opacity = '0.1';
       c.setAttribute('fill', c.dataset.base || '#2c5c7a');
     }
   });
 }
+function togglePhase(id, el) {
+  id = String(id);
+  if (activePhases.has(id)) activePhases.delete(id); else activePhases.add(id);
+  renderScatter();
+}
+function clearPhases() { activePhases.clear(); renderScatter(); }
+
+// tooltip แสดงค่าเมื่อชี้/แตะจุด scatter
+document.addEventListener('DOMContentLoaded', () => {
+  const tip = document.getElementById('scatterTip');
+  if (!tip) return;
+  const box = tip.parentElement;
+  const show = (c) => {
+    const hr = c.dataset.hr ? ' · ♥ ' + c.dataset.hr : '';
+    const ph = c.dataset.phasename ? '<br><span class="st-ph">' + c.dataset.phasename + '</span>' : '';
+    tip.innerHTML = '<b>' + c.dataset.sys + '/' + c.dataset.dia + '</b> mmHg' + hr + '<br><span class="st-date">' + c.dataset.date + '</span>' + ph;
+    const br = box.getBoundingClientRect();
+    const cr = c.getBoundingClientRect();
+    tip.style.left = (cr.left - br.left + cr.width / 2) + 'px';
+    tip.style.top  = (cr.top - br.top - 8) + 'px';
+    tip.classList.add('show');
+    c.setAttribute('r', '7');
+  };
+  const hide = (c) => { tip.classList.remove('show'); if (c) c.setAttribute('r', '4.5'); };
+  document.querySelectorAll('.scatter-pt').forEach(c => {
+    c.addEventListener('mouseenter', () => show(c));
+    c.addEventListener('mouseleave', () => hide(c));
+    c.addEventListener('click', (e) => { e.stopPropagation(); show(c); });
+  });
+  box.addEventListener('click', () => hide(null));
+});
 
 // ===== Pixel chart: สลับปี =====
 function showYear(y, el) {

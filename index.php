@@ -93,58 +93,60 @@ require __DIR__ . '/includes/header.php';
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0 reading-table" id="bpTable">
+      <table class="table align-middle mb-0 reading-table" id="bpTable">
         <thead>
-          <tr class="text-center small text-secondary">
-            <th class="text-start ps-3">วันที่</th>
-            <th>ช่วง / ครั้งที่</th>
-            <th>บน</th><th>ล่าง</th><th>ชีพจร</th>
-            <th>น้ำหนัก</th><th>BMI</th>
-            <th>แปลผล</th><th></th>
+          <tr class="small text-secondary">
+            <th class="ps-3" style="width:150px">วันที่</th>
+            <th>การวัดในวันนั้น</th>
+            <th class="text-center" style="width:120px">เฉลี่ยรายวัน</th>
+            <th class="text-center" style="width:170px">แปลผล</th>
           </tr>
         </thead>
         <tbody>
         <?php if (!$daysDesc): ?>
-          <tr><td colspan="9" class="text-center text-secondary py-5">
+          <tr><td colspan="4" class="text-center text-secondary py-5">
             <i class="bi bi-inbox fs-3 d-block mb-2"></i> ยังไม่มีข้อมูล — กด “เพิ่มบันทึก” เพื่อเริ่มต้น
           </td></tr>
         <?php else: foreach ($daysDesc as $d):
           $ph = phase_for_date($phases, $d['date']);
-          $rc = count($d['readings']);
-          foreach ($d['readings'] as $idx => $r):
-            $rbp = classify_bp($r['sys'] !== null ? (int)$r['sys'] : null, $r['dia'] !== null ? (int)$r['dia'] : null);
-            $rbmi = calc_bmi($r['weight'] ?? null, $r['height'] ?? null);
-            $rbmc = bmi_category($rbmi);
+          $a = $d['avg']; $bp = $d['bp'];
+          $bmi = calc_bmi($d['weight'] ?? null, $d['height'] ?? null); $bmc = bmi_category($bmi);
         ?>
-          <tr data-date="<?= fmt_date($d['date']) ?>" class="<?= $idx === 0 ? 'day-start' : '' ?>">
-            <?php if ($idx === 0): ?>
-              <td class="text-start ps-3 day-cell" rowspan="<?= $rc ?>">
-                <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
-                <div class="text-secondary x-sm">เฉลี่ย <?= num($d['avg']['sys']) ?>/<?= num($d['avg']['dia']) ?></div>
-                <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
-              </td>
-            <?php endif; ?>
+          <tr data-date="<?= fmt_date($d['date']) ?>" class="day-start">
+            <td class="ps-3 day-cell">
+              <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
+              <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
+              <?php if ($d['weight'] !== null): ?><div class="text-secondary x-sm mt-1"><i class="bi bi-speedometer2"></i> <?= e(fmt_num($d['weight'])) ?> กก.<?= $bmi !== null ? ' · BMI '.e($bmi) : '' ?></div><?php endif; ?>
+            </td>
+            <td>
+              <div class="day-readings">
+                <?php foreach ($d['readings'] as $r):
+                  $rbp = classify_bp($r['sys'] !== null ? (int)$r['sys'] : null, $r['dia'] !== null ? (int)$r['dia'] : null); ?>
+                <?php $dotColors = ['bp-normal'=>'#16a34a','bp-elevated'=>'#65a30d','bp-stage1'=>'#d99a1a','bp-stage2'=>'#d1603a','bp-crisis'=>'#b91c1c','bp-none'=>'#cbd5e1']; ?>
+                <span class="rc">
+                  <span class="rc-dot" style="background:<?= $dotColors[$rbp['class']] ?? '#cbd5e1' ?>"></span>
+                  <span class="period-badge p-<?= e($r['period']) ?>"><i class="bi <?= period_icon($r['period']) ?>"></i> <?= period_label($r['period']) ?> <?= $r['seq'] ?></span>
+                  <span class="rc-bp"><?= $r['sys'] !== null ? (int)$r['sys'] : '-' ?><span class="sep">/</span><?= $r['dia'] !== null ? (int)$r['dia'] : '-' ?></span>
+                  <?php if ($r['hr'] !== null): ?><span class="rc-hr"><i class="bi bi-heart-pulse"></i> <?= (int)$r['hr'] ?></span><?php endif; ?>
+                  <span class="rc-acts">
+                    <button type="button" onclick='editRow(<?= json_encode($r, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' title="แก้ไข"><i class="bi bi-pencil"></i></button>
+                    <form method="post" action="save.php" class="d-inline" onsubmit="return confirm('ลบการวัดนี้ (<?= period_label($r['period']) ?> ครั้งที่ <?= $r['seq'] ?>) ?')">
+                      <input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
+                      <button type="submit" class="del" title="ลบ"><i class="bi bi-trash"></i></button>
+                    </form>
+                  </span>
+                </span>
+                <?php endforeach; ?>
+                <button type="button" class="rc-add" onclick="addForDay('<?= e($d['date']) ?>')" title="เพิ่มการวัดในวันนี้"><i class="bi bi-plus-lg"></i></button>
+              </div>
+            </td>
             <td class="text-center">
-              <span class="period-badge p-<?= e($r['period']) ?>"><i class="bi <?= period_icon($r['period']) ?>"></i> <?= period_label($r['period']) ?></span>
-              <span class="seq-badge">ครั้งที่ <?= $r['seq'] ?></span>
+              <span class="avg-pill <?= e($bp['class']) ?>"><?= num($a['sys']) ?>/<?= num($a['dia']) ?></span>
+              <div class="text-secondary x-sm mt-1">♥ <?= num($a['hr']) ?> · <?= count($d['readings']) ?> ครั้ง</div>
             </td>
-            <td class="text-center fw-bold"><?= $r['sys'] !== null ? (int)$r['sys'] : '-' ?></td>
-            <td class="text-center fw-bold"><?= $r['dia'] !== null ? (int)$r['dia'] : '-' ?></td>
-            <td class="text-center text-secondary"><?= $r['hr'] !== null ? (int)$r['hr'] : '-' ?></td>
-            <td class="text-center text-secondary"><?= isset($r['weight']) && $r['weight'] !== null ? e(fmt_num($r['weight'])) : '-' ?></td>
-            <td class="text-center"><?= $rbmi !== null ? '<span class="badge-result '.e($rbmc[1]).'">'.e($rbmi).'</span>' : '<span class="text-secondary">-</span>' ?></td>
-            <td class="text-center"><span class="badge-result <?= e($rbp['class']) ?>"><?= e($rbp['label']) ?></span></td>
-            <td class="text-nowrap text-end pe-2">
-              <button type="button" class="btn btn-sm btn-icon btn-outline-secondary"
-                onclick='editRow(<?= json_encode($r, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' title="แก้ไข"><i class="bi bi-pencil"></i></button>
-              <form method="post" action="save.php" class="d-inline" onsubmit="return confirm('ลบการวัดนี้ (<?= period_label($r['period']) ?> ครั้งที่ <?= $r['seq'] ?> วันที่ <?= fmt_date($d['date']) ?>) ?')">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="ลบ"><i class="bi bi-trash"></i></button>
-              </form>
-            </td>
+            <td class="text-center"><span class="badge-result <?= e($bp['class']) ?>"><?= e($bp['label']) ?></span></td>
           </tr>
-        <?php endforeach; endforeach; endif; ?>
+        <?php endforeach; endif; ?>
         </tbody>
       </table>
     </div>

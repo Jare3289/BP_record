@@ -45,7 +45,7 @@ $flash = $msg === 'saved' ? 'บันทึกการตั้งค่าแ
 $PAGE = 'แดชบอร์ด'; $ACTIVE = 'dashboard';
 require __DIR__ . '/includes/header.php';
 
-$monthsEN = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+$monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
 ?>
 
@@ -117,11 +117,11 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
             <?php foreach ($years as $y): ?>
             <div class="pixel-wrap <?= $y===$curYear?'':'d-none' ?>" data-year="<?= $y ?>">
               <table class="pixel-grid">
-                <thead><tr><th></th><?php foreach ($monthsEN as $m): ?><th><?= $m ?></th><?php endforeach; ?></tr></thead>
+                <thead><tr><th></th><?php for ($day = 1; $day <= 31; $day++): ?><th class="px-dnum"><?= $day ?></th><?php endfor; ?></tr></thead>
                 <tbody>
-                  <?php for ($day = 1; $day <= 31; $day++): ?>
-                  <tr><td class="px-day"><?= $day ?></td>
-                    <?php for ($mo = 1; $mo <= 12; $mo++):
+                  <?php for ($mo = 1; $mo <= 12; $mo++): ?>
+                  <tr><td class="px-month"><?= $monthsTH[$mo-1] ?></td>
+                    <?php for ($day = 1; $day <= 31; $day++):
                       if (!checkdate($mo, $day, (int)$y)) { echo '<td class="px-void"></td>'; continue; }
                       $ds = sprintf('%04d-%02d-%02d', $y, $mo, $day);
                       $lv = $dateLevel[$ds] ?? null;
