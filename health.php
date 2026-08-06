@@ -34,6 +34,20 @@ if ($latestCk) {
     }
 }
 
+// ---- สรุปสำหรับ bento header ----
+$withData = array_filter($metrics, fn($m, $code) => !empty($byMetric[$code]), ARRAY_FILTER_USE_BOTH);
+$totalLogs = count($allLogs);
+$metricsTracked = count($withData);
+$wLog = $byMetric['weight'][0]['val'] ?? null;
+$latestWeight = $wLog !== null ? (float)$wLog : ($latestCk['weight'] ?? null);
+$heightVal = $latestCk['height'] ?? null;
+$bmiVal = calc_bmi($latestWeight, $heightVal);
+$bmiCat = bmi_category($bmiVal);
+$trendMetric = null;
+foreach (['weight', 'glucose'] as $tc) if (!empty($byMetric[$tc])) { $trendMetric = $tc; break; }
+if (!$trendMetric && $withData) $trendMetric = array_key_first($withData);
+$trendSeries = $trendMetric ? array_reverse(array_map(fn($l) => (float)$l['val'], array_slice($byMetric[$trendMetric], 0, 24))) : [];
+
 $msg = $_GET['msg'] ?? '';
 $flash = match ($msg) {
     'saved'   => ['บันทึกเรียบร้อยแล้ว', 'success', 'bi-check-circle-fill'],
@@ -62,6 +76,46 @@ require __DIR__ . '/includes/header.php';
   <div class="alert alert-<?= $flash[1] ?> d-flex align-items-center gap-2 shadow-sm"><i class="bi <?= $flash[2] ?>"></i> <?= e($flash[0]) ?></div>
 <?php endif; ?>
 
+<!-- ===== bento header ===== -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="bento-hero h-100">
+      <div class="bh-icon"><i class="bi bi-clipboard2-heart-fill"></i></div>
+      <?php if ($bmiVal !== null): ?>
+        <div class="bh-bignum"><?= e($bmiVal) ?></div>
+        <div class="bh-foot mt-2"><span class="badge-result <?= e($bmiCat[1]) ?>"><?= e($bmiCat[0]) ?></span></div>
+        <div class="bh-label mt-2">ดัชนีมวลกาย (BMI)<?= $latestWeight !== null ? ' · '.e(fmt_num($latestWeight)).' กก.' : '' ?></div>
+      <?php else: ?>
+        <div class="bh-bignum"><?= $totalLogs ?></div>
+        <div class="bh-label mt-2">บันทึกค่าสุขภาพทั้งหมด</div>
+        <div class="bh-foot mt-2"><span class="badge-result bp-normal">ติดตามต่อเนื่อง</span></div>
+      <?php endif; ?>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-xl-2">
+    <div class="stat-tile h-100">
+      <div class="st-ic ok"><i class="bi bi-journal-check"></i></div>
+      <div><div class="st-lbl">ค่าที่ติดตาม</div><div class="st-num"><?= $metricsTracked ?></div><div class="st-sub">ชนิดค่า</div></div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 col-xl-2">
+    <div class="stat-tile h-100">
+      <div class="st-ic <?= $latestCkAbn>0?'warn':'ok' ?>"><i class="bi <?= $latestCkAbn>0?'bi-exclamation-triangle':'bi-check-circle' ?>"></i></div>
+      <div><div class="st-lbl">ผลตรวจล่าสุด</div><div class="st-num"><?= $latestCk ? $latestCkAbn : '-' ?></div><div class="st-sub"><?= $latestCk ? 'รายการผิดปกติ' : 'ยังไม่มี' ?></div></div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="soft-card h-100">
+      <div class="card-mini-head"><span><i class="bi bi-graph-up"></i> แนวโน้ม<?= $trendMetric ? e($metrics[$trendMetric][0]) : 'ค่าสุขภาพ' ?></span><?php if ($trendMetric): ?><span class="chip-soft"><?= e(fmt_num($byMetric[$trendMetric][0]['val'])) ?> <?= e($metrics[$trendMetric][1]) ?></span><?php endif; ?></div>
+      <?php if (count($trendSeries) >= 2): ?>
+        <div class="chart-box"><?= sparkline_svg($trendSeries, $trendMetric ? $metrics[$trendMetric][3] : '#57b894', 520, 150) ?></div>
+      <?php else: ?>
+        <p class="text-center text-secondary py-4 mb-0"><i class="bi bi-plus-circle d-block fs-4 mb-2"></i> บันทึกค่าอย่างน้อย 2 ครั้งเพื่อดูแนวโน้ม</p>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+
 <!-- เลือกบันทึกค่าแบบเร็ว -->
 <div class="card app-card mb-4">
   <div class="card-header"><i class="bi bi-lightning-charge-fill"></i> บันทึกค่าสุขภาพวันนี้ — เลือกแล้วใส่ค่าได้เลย</div>
@@ -78,9 +132,7 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <!-- Dashboard: การ์ดค่าสุขภาพล่าสุด -->
-<?php
-$withData = array_filter($metrics, fn($m, $code) => !empty($byMetric[$code]), ARRAY_FILTER_USE_BOTH);
-if ($withData): ?>
+<?php if ($withData): ?>
 <div class="row g-3 mb-4">
   <?php foreach ($withData as $code => $m):
     $logs = $byMetric[$code];              // desc
