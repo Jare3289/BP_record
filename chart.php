@@ -30,18 +30,38 @@ foreach ($daily as $d) {
     $byPhase[$key]['color'] = $d['phase'] ? $d['phase']['color'] : '#94a3b8';
     if ($d['sys'] !== null) $byPhase[$key]['sys'][] = $d['sys'];
     if ($d['dia'] !== null) $byPhase[$key]['dia'][] = $d['dia'];
+    if ($d['hr']  !== null) $byPhase[$key]['hr'][]  = $d['hr'];
 }
 $phaseStats = [];
 foreach ($byPhase as $k => $v) {
-    $ns = $v['sys'] ?? []; $nd = $v['dia'] ?? [];
+    $ns = $v['sys'] ?? []; $nd = $v['dia'] ?? []; $nh = $v['hr'] ?? [];
     if (!$ns) continue;
+    $bpc = classify_bp((int) round(array_sum($ns) / count($ns)), $nd ? (int) round(array_sum($nd) / count($nd)) : null);
     $phaseStats[] = [
         'name'  => $v['name'], 'color' => $v['color'],
         'sys'   => (int) round(array_sum($ns) / count($ns)),
         'dia'   => $nd ? (int) round(array_sum($nd) / count($nd)) : 0,
-        'days'  => count($ns),
+        'hr'    => $nh ? (int) round(array_sum($nh) / count($nh)) : 0,
+        'days'  => count($ns), 'bp' => $bpc,
     ];
 }
+
+// รวมจอมอนิเตอร์: ภาพรวมทั้งหมด + แต่ละช่วง
+$oS = $oD = $oH = [];
+foreach ($daily as $d) {
+    if ($d['sys'] !== null) $oS[] = $d['sys'];
+    if ($d['dia'] !== null) $oD[] = $d['dia'];
+    if ($d['hr']  !== null) $oH[] = $d['hr'];
+}
+$monitors = [];
+if ($oS) {
+    $osys = (int) round(array_sum($oS) / count($oS));
+    $odia = $oD ? (int) round(array_sum($oD) / count($oD)) : 0;
+    $monitors[] = ['name' => 'ภาพรวมทั้งหมด', 'color' => '#2c5c7a', 'sys' => $osys, 'dia' => $odia,
+        'hr' => $oH ? (int) round(array_sum($oH) / count($oH)) : 0, 'days' => count($oS),
+        'bp' => classify_bp($osys, $odia), 'overall' => true];
+}
+foreach ($phaseStats as $ps) { $ps['overall'] = false; $monitors[] = $ps; }
 
 $weightPts = array_values(array_filter($daily, fn($d) => $d['weight'] !== null));
 $latestWH  = null;
@@ -91,8 +111,8 @@ function svg_line(array $pts, array $series, float $ymin, float $ymax, array $gr
         // จุด marker
         foreach ($pts as $i => $p) {
             if (($p[$key] ?? null) === null) continue;
-            $out .= sprintf('<circle cx="%.1f" cy="%.1f" r="3" fill="#fff" stroke="%s" stroke-width="2"><title>%s · %s</title></circle>',
-                $x($i), $y($p[$key]), $color, fmt_date($p['date']), $p[$key]);
+            $out .= sprintf('<circle class="tip-pt" cx="%.1f" cy="%.1f" r="3.5" fill="#fff" stroke="%s" stroke-width="2" data-tip="%s"/>',
+                $x($i), $y($p[$key]), $color, htmlspecialchars(fmt_date($p['date']) . ' · ' . $p[$key], ENT_QUOTES));
         }
     }
     foreach ($pts as $i => $p) {
@@ -128,13 +148,14 @@ require __DIR__ . '/includes/header.php';
       <div class="card-body">
         <?php if ($phases): ?>
         <div class="phase-chips mb-3">
-          <button class="phase-chip active" onclick="highlightPhase('all', this)"><i class="bi bi-grid-3x3"></i> ทั้งหมด</button>
+          <button class="phase-chip active" id="chip-all" onclick="clearPhases()"><i class="bi bi-grid-3x3"></i> ทั้งหมด</button>
           <?php foreach ($phases as $p): ?>
-            <button class="phase-chip" style="--pc:<?= e($p['color']) ?>" onclick="highlightPhase('<?= (int)$p['id'] ?>', this)">
+            <button class="phase-chip" data-phase="<?= (int)$p['id'] ?>" style="--pc:<?= e($p['color']) ?>" onclick="togglePhase('<?= (int)$p['id'] ?>', this)">
               <i class="bi bi-circle-fill"></i> <?= e($p['name']) ?>
             </button>
           <?php endforeach; ?>
         </div>
+        <p class="text-secondary x-sm mb-3"><i class="bi bi-hand-index"></i> เลือกได้หลายช่วงพร้อมกัน · ชี้/แตะที่จุดเพื่อดูค่า</p>
         <?php else: ?>
         <div class="alert alert-light border small mb-3"><i class="bi bi-lightbulb"></i>
           เพิ่ม <a href="phases.php">ช่วงการรักษา</a> เพื่อไฮไลต์จุดตามช่วง (เช่น ก่อนกินยา / กินยาช่วงที่ 1)</div>
@@ -166,54 +187,51 @@ require __DIR__ . '/includes/header.php';
           <?php foreach ($scatter as $d): $ph=$d['phase']; ?>
             <circle class="scatter-pt" cx="<?= sprintf('%.1f',$px($d['dia'])) ?>" cy="<?= sprintf('%.1f',$py($d['sys'])) ?>" r="4.5"
               fill="#2c5c7a" stroke="#fff" stroke-width="1.2"
-              data-base="#2c5c7a" data-phase="<?= $ph ? (int)$ph['id'] : '' ?>" data-color="<?= $ph ? e($ph['color']) : '#57b894' ?>">
-              <title><?= fmt_date($d['date']) ?> — <?= $d['sys'] ?>/<?= $d['dia'] ?><?= $ph ? ' · '.e($ph['name']) : '' ?></title>
-            </circle>
+              data-base="#2c5c7a" data-phase="<?= $ph ? (int)$ph['id'] : '' ?>" data-color="<?= $ph ? e($ph['color']) : '#57b894' ?>"
+              data-date="<?= fmt_date($d['date']) ?>" data-sys="<?= $d['sys'] ?>" data-dia="<?= $d['dia'] ?>"
+              data-hr="<?= $d['hr'] !== null ? $d['hr'] : '' ?>" data-phasename="<?= $ph ? e($ph['name']) : '' ?>"></circle>
           <?php endforeach; ?>
         </svg>
+        <div id="scatterTip" class="scatter-tip"></div>
         </div>
         <p class="text-center text-secondary small mt-2 mb-0"><i class="bi bi-info-circle"></i>
-          จุดสีเดียวคือภาพรวม · กดชิปช่วงด้านบนเพื่อไฮไลต์เฉพาะช่วงนั้น</p>
+          จุดสีเดียวคือภาพรวม · เลือกชิปช่วง (หลายอันได้) เพื่อไฮไลต์</p>
         <?php endif; ?>
       </div>
     </div>
   </div>
 
-  <!-- เปรียบเทียบรายช่วง -->
+  <!-- เปรียบเทียบรายช่วง = จอเครื่องวัดความดัน -->
   <div class="col-12 col-xl-5">
-    <div class="card app-card h-100">
-      <div class="card-header"><i class="bi bi-bar-chart-line"></i> เปรียบเทียบค่าเฉลี่ยตามช่วง</div>
+    <div class="card app-card">
+      <div class="card-header"><i class="bi bi-activity"></i> ค่าเฉลี่ยตามช่วง (จอเครื่องวัด)</div>
       <div class="card-body">
-        <?php if (!$phaseStats || count($phaseStats) < 1): ?>
-          <p class="text-center text-secondary py-5"><i class="bi bi-signpost fs-3 d-block mb-2"></i>
-            ยังไม่มีช่วง — <a href="phases.php">เพิ่มช่วงการรักษา</a><br><span class="small">เพื่อเปรียบเทียบค่าก่อน/หลังกินยา</span></p>
-        <?php else:
-          $maxv = 180; $gh = 240; $baseY = 200; $scaleY = fn($v) => $baseY - ($v / $maxv) * ($baseY - 20);
-          $groupN = count($phaseStats); $gw = 100 / $groupN;
-        ?>
-        <div class="chart-box">
-        <svg viewBox="0 0 <?= max(360, $groupN*130) ?> 250" class="bar-cmp" preserveAspectRatio="xMidYMid meet">
-          <?php $CW = max(360, $groupN*130); $pad = 30; $areaW = $CW - $pad*2; $slot = $areaW / $groupN;
-            foreach ([80,120,135,160] as $g): $gy=$scaleY($g); ?>
-            <line x1="<?= $pad ?>" y1="<?= $gy ?>" x2="<?= $CW-$pad ?>" y2="<?= $gy ?>" stroke="var(--bs-border-color)" stroke-dasharray="3 4"/>
-            <text x="<?= $pad-4 ?>" y="<?= $gy+4 ?>" text-anchor="end" class="axl"><?= $g ?></text>
+        <?php if (!$monitors): ?>
+          <p class="text-center text-secondary py-5"><i class="bi bi-activity fs-3 d-block mb-2"></i> ยังไม่มีข้อมูล</p>
+        <?php else: ?>
+        <?php if (count($monitors) > 1): ?>
+        <div class="phase-chips mb-3" id="monChips">
+          <?php foreach ($monitors as $i => $m): ?>
+            <button class="phase-chip active" style="--pc:<?= e($m['color']) ?>" data-mon-toggle="<?= $i ?>" onclick="toggleMon('<?= $i ?>', this)">
+              <i class="bi <?= !empty($m['overall']) ? 'bi-grid-3x3-gap-fill' : 'bi-circle-fill' ?>"></i> <?= e($m['name']) ?>
+            </button>
           <?php endforeach; ?>
-          <?php foreach ($phaseStats as $i => $ps):
-            $cx = $pad + $slot*$i + $slot/2; $bw = 22;
-            $sysY = $scaleY($ps['sys']); $diaY = $scaleY($ps['dia']); ?>
-            <rect x="<?= $cx-$bw-3 ?>" y="<?= $sysY ?>" width="<?= $bw ?>" height="<?= $baseY-$sysY ?>" rx="5" fill="<?= e($ps['color']) ?>"><title><?= e($ps['name']) ?> บนเฉลี่ย <?= $ps['sys'] ?></title></rect>
-            <rect x="<?= $cx+3 ?>" y="<?= $diaY ?>" width="<?= $bw ?>" height="<?= $baseY-$diaY ?>" rx="5" fill="<?= e($ps['color']) ?>" opacity="0.45"><title><?= e($ps['name']) ?> ล่างเฉลี่ย <?= $ps['dia'] ?></title></rect>
-            <text x="<?= $cx-$bw/2-3 ?>" y="<?= $sysY-5 ?>" text-anchor="middle" class="bar-val"><?= $ps['sys'] ?></text>
-            <text x="<?= $cx+$bw/2+3 ?>" y="<?= $diaY-5 ?>" text-anchor="middle" class="bar-val dim"><?= $ps['dia'] ?></text>
-            <text x="<?= $cx ?>" y="222" text-anchor="middle" class="bar-lbl"><?= e(mb_strimwidth($ps['name'],0,16,'…','UTF-8')) ?></text>
-            <text x="<?= $cx ?>" y="236" text-anchor="middle" class="axl"><?= $ps['days'] ?> วัน</text>
+        </div>
+        <?php endif; ?>
+        <div class="monitor-grid">
+          <?php foreach ($monitors as $i => $m): ?>
+          <div class="bp-monitor <?= !empty($m['overall']) ? 'mon-overall' : '' ?>" data-mon="<?= $i ?>" style="--pc:<?= e($m['color']) ?>">
+            <div class="mon-head"><span class="mon-dot"></span> <?= e($m['name']) ?> <span class="mon-days"><?= $m['days'] ?> วัน</span></div>
+            <div class="mon-screen">
+              <div class="mon-row"><span class="mon-lbl">SYS</span><span class="mon-val"><?= $m['sys'] ?></span><span class="mon-unit">mmHg</span></div>
+              <div class="mon-row"><span class="mon-lbl">DIA</span><span class="mon-val"><?= $m['dia'] ?></span><span class="mon-unit">mmHg</span></div>
+              <div class="mon-row pulse"><span class="mon-lbl"><i class="bi bi-heart-fill"></i></span><span class="mon-val sm"><?= $m['hr'] ?></span><span class="mon-unit">/min</span></div>
+              <div class="mon-result"><?= e($m['bp']['label']) ?></div>
+            </div>
+          </div>
           <?php endforeach; ?>
-        </svg>
         </div>
-        <div class="d-flex gap-3 mt-2 x-sm text-secondary justify-content-center">
-          <span><span class="ll-dot" style="background:#2c5c7a"></span> บน (เข้ม)</span>
-          <span><span class="ll-dot" style="background:#2c5c7a;opacity:.45"></span> ล่าง (จาง)</span>
-        </div>
+        <p class="text-center text-secondary small mt-3 mb-0"><i class="bi bi-info-circle"></i> กดชิปเพื่อเลือกว่าจะแสดงจอไหนบ้าง · เพิ่มช่วงได้ที่ <a href="phases.php">ช่วงการรักษา</a></p>
         <?php endif; ?>
       </div>
     </div>

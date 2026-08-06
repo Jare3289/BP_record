@@ -49,6 +49,92 @@ if ($action === 'delete_phase') {
     exit;
 }
 
+/** ---------- บันทึกค่าสุขภาพรายครั้ง ---------- */
+if ($action === 'save_health') {
+    $hid    = (int) ($_POST['id'] ?? 0);
+    $metric = $_POST['metric'] ?? '';
+    $date   = trim($_POST['log_date'] ?? '');
+    $val    = $_POST['val'] ?? '';
+    if (!array_key_exists($metric, health_metrics()) || $date === '' || !strtotime($date) || $val === '' || !is_numeric($val)) {
+        header('Location: health.php?msg=error'); exit;
+    }
+    $date = date('Y-m-d', strtotime($date));
+    $val  = (float) $val;
+    $note = trim($_POST['note'] ?? '') ?: null;
+    try {
+        if ($hid > 0) {
+            db()->prepare('UPDATE health_logs SET log_date=?, metric=?, val=?, note=? WHERE id=?')->execute([$date, $metric, $val, $note, $hid]);
+        } else {
+            db()->prepare('INSERT INTO health_logs (log_date, metric, val, note) VALUES (?,?,?,?)')->execute([$date, $metric, $val, $note]);
+        }
+    } catch (Throwable $e) { header('Location: health.php?msg=error'); exit; }
+    header('Location: health.php?msg=saved'); exit;
+}
+if ($action === 'delete_health') {
+    $hid = (int) ($_POST['id'] ?? 0);
+    if ($hid > 0) db()->prepare('DELETE FROM health_logs WHERE id=?')->execute([$hid]);
+    header('Location: health.php?msg=deleted'); exit;
+}
+
+/** ---------- ประวัติการตรวจสุขภาพ ---------- */
+if ($action === 'save_checkup') {
+    $cid  = (int) ($_POST['id'] ?? 0);
+    $date = trim($_POST['checkup_date'] ?? '');
+    if ($date === '' || !strtotime($date)) { header('Location: health.php?msg=error'); exit; }
+    $date = date('Y-m-d', strtotime($date));
+
+    $numN = fn($k) => (($v = $_POST[$k] ?? '') === '' || !is_numeric($v)) ? null : $v;
+    $fields = [
+        'checkup_date' => $date,
+        'hospital' => trim($_POST['hospital'] ?? '') ?: null,
+        'doctor'   => trim($_POST['doctor'] ?? '') ?: null,
+        'weight'   => $numN('weight'), 'height' => $numN('height'),
+        'sbp'      => $numN('sbp'), 'dbp' => $numN('dbp'), 'pulse' => $numN('pulse'),
+        'xray'     => trim($_POST['xray'] ?? '') ?: null,
+        'ekg'      => trim($_POST['ekg'] ?? '') ?: null,
+        'hbtyping' => trim($_POST['hbtyping'] ?? '') ?: null,
+        'summary'  => trim($_POST['summary'] ?? '') ?: null,
+        'note'     => trim($_POST['note'] ?? '') ?: null,
+    ];
+    try {
+        if ($cid > 0) {
+            $set = implode(', ', array_map(fn($k) => "`$k` = :$k", array_keys($fields)));
+            $fields['id'] = $cid;
+            db()->prepare("UPDATE checkups SET $set WHERE id = :id")->execute($fields);
+            unset($fields['id']);
+        } else {
+            $cols = array_keys($fields);
+            $ph = implode(', ', array_map(fn($c) => ":$c", $cols));
+            db()->prepare('INSERT INTO checkups (`' . implode('`,`', $cols) . "`) VALUES ($ph)")->execute($fields);
+            $cid = (int) db()->lastInsertId();
+        }
+        // ผลตรวจ (key-value)
+        db()->prepare('DELETE FROM checkup_values WHERE checkup_id = ?')->execute([$cid]);
+        $vals = $_POST['v'] ?? [];
+        if (is_array($vals)) {
+            $ins = db()->prepare('INSERT INTO checkup_values (checkup_id, code, val) VALUES (?,?,?)');
+            $valid = checkup_tests_map();
+            foreach ($vals as $code => $v) {
+                $v = trim((string) $v);
+                if ($v === '' || !isset($valid[$code])) continue;
+                $ins->execute([$cid, $code, mb_substr($v, 0, 100)]);
+            }
+        }
+    } catch (Throwable $e) {
+        header('Location: health.php?msg=error'); exit;
+    }
+    header('Location: health.php?msg=saved&open=' . $cid);
+    exit;
+}
+if ($action === 'delete_checkup') {
+    $cid = (int) ($_POST['id'] ?? 0);
+    if ($cid > 0) {
+        try { db()->prepare('DELETE FROM checkup_values WHERE checkup_id = ?')->execute([$cid]); } catch (Throwable $e) {}
+        db()->prepare('DELETE FROM checkups WHERE id = ?')->execute([$cid]);
+    }
+    header('Location: health.php?msg=deleted'); exit;
+}
+
 /** ---------- การตั้งค่า (เป้าหมายความดัน) ---------- */
 if ($action === 'save_settings') {
     $ts = (int) ($_POST['target_sys'] ?? 135);

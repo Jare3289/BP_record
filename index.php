@@ -24,6 +24,20 @@ $totalReadings = count($readings);
 $overall = classify_bp(is_int($sSys['avg']) ? $sSys['avg'] : null, is_int($sDia['avg']) ? $sDia['avg'] : null);
 
 $daysDesc = array_reverse($days);            // ใหม่→เก่า สำหรับแสดงผล
+[$dateLevel, $years, $curYear] = pixel_data($days);
+
+/** วาด 3 ช่อง บน/ล่าง/หัวใจ ของการวัด 1 ครั้ง (คลิกแก้ไข) หรือช่องว่าง (คลิกเพิ่ม) */
+function render_slot(?array $r, string $date, string $period): string
+{
+    if ($r) {
+        $j = htmlspecialchars(json_encode($r, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES);
+        $c = "onclick='editRow($j)'";
+        return "<td class=\"v-cell\" $c>" . ($r['sys'] !== null ? (int)$r['sys'] : '-') . "</td>"
+             . "<td class=\"v-cell\" $c>" . ($r['dia'] !== null ? (int)$r['dia'] : '-') . "</td>"
+             . "<td class=\"v-cell dim\" $c>" . ($r['hr'] !== null ? (int)$r['hr'] : '-') . "</td>";
+    }
+    return "<td class=\"v-empty\" colspan=\"3\" onclick=\"addForDay('" . e($date) . "','" . $period . "')\"><i class=\"bi bi-plus\"></i></td>";
+}
 
 $msg = $_GET['msg'] ?? '';
 $flash = match ($msg) {
@@ -86,65 +100,93 @@ require __DIR__ . '/includes/header.php';
   </div>
 </div>
 
+<!-- ปฏิทินสุขภาพ -->
+<div class="card app-card mb-4">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <span><i class="bi bi-grid-3x3-gap-fill"></i> ปฏิทินสุขภาพรายวัน</span>
+    <?php if (count($years) > 1): ?><span class="year-chips">
+      <?php foreach ($years as $y): ?><button class="year-chip <?= $y===$curYear?'active':'' ?>" onclick="showYear('<?= $y ?>',this)"><?= $y ?></button><?php endforeach; ?>
+    </span><?php else: ?><span class="chip-soft"><?= e($curYear) ?></span><?php endif; ?>
+  </div>
+  <div class="card-body"><?= pixel_calendar_html($dateLevel, $years, $curYear) ?></div>
+</div>
+
+<!-- ตารางบันทึก (หัวตารางแบบเดิม) -->
 <div class="card app-card">
   <div class="card-header d-flex align-items-center justify-content-between">
-    <span><i class="bi bi-list-ul"></i> ประวัติการวัด (รายครั้ง)</span>
+    <span><i class="bi bi-table"></i> ประวัติการวัด</span>
     <input type="search" id="tableSearch" class="form-control form-control-sm search-box" placeholder="🔍 ค้นหาวันที่...">
   </div>
   <div class="card-body p-0">
     <div class="table-responsive">
-      <table class="table table-hover align-middle mb-0 reading-table" id="bpTable">
+      <table class="table align-middle mb-0 bp-table grid-table" id="bpTable">
         <thead>
+          <tr class="text-center">
+            <th rowspan="3" class="ps-3 text-start align-middle">วันที่</th>
+            <th colspan="6" class="grp-morning"><i class="bi bi-sunrise"></i> เช้า</th>
+            <th colspan="6" class="grp-night"><i class="bi bi-moon-stars"></i> ก่อนนอน</th>
+            <th colspan="3" class="grp-avg">ค่าเฉลี่ยรายวัน</th>
+            <th rowspan="3" class="align-middle">แปลผล</th>
+            <th rowspan="3" class="align-middle"></th>
+          </tr>
           <tr class="text-center small text-secondary">
-            <th class="text-start ps-3">วันที่</th>
-            <th>ช่วง / ครั้งที่</th>
-            <th>บน</th><th>ล่าง</th><th>ชีพจร</th>
-            <th>น้ำหนัก</th><th>BMI</th>
-            <th>แปลผล</th><th></th>
+            <th colspan="3" class="grp-morning">ครั้งที่ 1</th><th colspan="3" class="grp-morning">ครั้งที่ 2</th>
+            <th colspan="3" class="grp-night">ครั้งที่ 1</th><th colspan="3" class="grp-night">ครั้งที่ 2</th>
+            <th colspan="3" class="grp-avg"></th>
+          </tr>
+          <tr class="text-center small text-secondary">
+            <?php for ($i=0;$i<5;$i++): ?><th>บน</th><th>ล่าง</th><th>♥</th><?php endfor; ?>
           </tr>
         </thead>
         <tbody>
         <?php if (!$daysDesc): ?>
-          <tr><td colspan="9" class="text-center text-secondary py-5">
+          <tr><td colspan="19" class="text-center text-secondary py-5">
             <i class="bi bi-inbox fs-3 d-block mb-2"></i> ยังไม่มีข้อมูล — กด “เพิ่มบันทึก” เพื่อเริ่มต้น
           </td></tr>
         <?php else: foreach ($daysDesc as $d):
           $ph = phase_for_date($phases, $d['date']);
-          $rc = count($d['readings']);
-          foreach ($d['readings'] as $idx => $r):
-            $rbp = classify_bp($r['sys'] !== null ? (int)$r['sys'] : null, $r['dia'] !== null ? (int)$r['dia'] : null);
-            $rbmi = calc_bmi($r['weight'] ?? null, $r['height'] ?? null);
-            $rbmc = bmi_category($rbmi);
+          $a = $d['avg']; $bp = $d['bp'];
+          $bmi = calc_bmi($d['weight'] ?? null, $d['height'] ?? null);
+          $morn = array_values(array_filter($d['readings'], fn($r) => $r['period'] === 'morning'));
+          $bed  = array_values(array_filter($d['readings'], fn($r) => $r['period'] === 'bedtime'));
+          $chosen = array_filter([$morn[0] ?? null, $morn[1] ?? null, $bed[0] ?? null, $bed[1] ?? null]);
+          $chosenIds = array_map(fn($r) => $r['id'], $chosen);
+          $extra = array_values(array_filter($d['readings'], fn($r) => !in_array($r['id'], $chosenIds)));
         ?>
-          <tr data-date="<?= fmt_date($d['date']) ?>" class="<?= $idx === 0 ? 'day-start' : '' ?>">
-            <?php if ($idx === 0): ?>
-              <td class="text-start ps-3 day-cell" rowspan="<?= $rc ?>">
-                <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
-                <div class="text-secondary x-sm">เฉลี่ย <?= num($d['avg']['sys']) ?>/<?= num($d['avg']['dia']) ?></div>
-                <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
-              </td>
-            <?php endif; ?>
-            <td class="text-center">
-              <span class="period-badge p-<?= e($r['period']) ?>"><i class="bi <?= period_icon($r['period']) ?>"></i> <?= period_label($r['period']) ?></span>
-              <span class="seq-badge">ครั้งที่ <?= $r['seq'] ?></span>
+          <tr data-date="<?= fmt_date($d['date']) ?>" class="day-start text-center">
+            <td class="ps-3 text-start day-cell">
+              <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
+              <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
+              <?php if ($d['weight'] !== null): ?><div class="text-secondary x-sm mt-1"><i class="bi bi-speedometer2"></i> <?= e(fmt_num($d['weight'])) ?> กก.<?= $bmi !== null ? ' · BMI '.e($bmi) : '' ?></div><?php endif; ?>
             </td>
-            <td class="text-center fw-bold"><?= $r['sys'] !== null ? (int)$r['sys'] : '-' ?></td>
-            <td class="text-center fw-bold"><?= $r['dia'] !== null ? (int)$r['dia'] : '-' ?></td>
-            <td class="text-center text-secondary"><?= $r['hr'] !== null ? (int)$r['hr'] : '-' ?></td>
-            <td class="text-center text-secondary"><?= isset($r['weight']) && $r['weight'] !== null ? e(fmt_num($r['weight'])) : '-' ?></td>
-            <td class="text-center"><?= $rbmi !== null ? '<span class="badge-result '.e($rbmc[1]).'">'.e($rbmi).'</span>' : '<span class="text-secondary">-</span>' ?></td>
-            <td class="text-center"><span class="badge-result <?= e($rbp['class']) ?>"><?= e($rbp['label']) ?></span></td>
-            <td class="text-nowrap text-end pe-2">
-              <button type="button" class="btn btn-sm btn-icon btn-outline-secondary"
-                onclick='editRow(<?= json_encode($r, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)' title="แก้ไข"><i class="bi bi-pencil"></i></button>
-              <form method="post" action="save.php" class="d-inline" onsubmit="return confirm('ลบการวัดนี้ (<?= period_label($r['period']) ?> ครั้งที่ <?= $r['seq'] ?> วันที่ <?= fmt_date($d['date']) ?>) ?')">
-                <input type="hidden" name="action" value="delete">
-                <input type="hidden" name="id" value="<?= (int)$r['id'] ?>">
-                <button type="submit" class="btn btn-sm btn-icon btn-outline-danger" title="ลบ"><i class="bi bi-trash"></i></button>
-              </form>
+            <?= render_slot($morn[0] ?? null, $d['date'], 'morning') ?>
+            <?= render_slot($morn[1] ?? null, $d['date'], 'morning') ?>
+            <?= render_slot($bed[0] ?? null, $d['date'], 'bedtime') ?>
+            <?= render_slot($bed[1] ?? null, $d['date'], 'bedtime') ?>
+            <td class="fw-bold avg-cell <?= e($bp['class']) ?>"><?= num($a['sys']) ?></td>
+            <td class="fw-bold"><?= num($a['dia']) ?></td>
+            <td class="fw-bold text-secondary"><?= num($a['hr']) ?></td>
+            <td><span class="badge-result <?= e($bp['class']) ?>"><?= e($bp['label']) ?></span></td>
+            <td class="text-nowrap">
+              <button type="button" class="btn btn-sm btn-icon btn-outline-secondary" onclick="addForDay('<?= e($d['date']) ?>')" title="เพิ่มการวัดในวันนี้"><i class="bi bi-plus-lg"></i></button>
             </td>
           </tr>
-        <?php endforeach; endforeach; endif; ?>
+          <?php if ($extra): ?>
+          <tr data-date="<?= fmt_date($d['date']) ?>" class="extra-row">
+            <td></td>
+            <td colspan="18" class="text-start">
+              <span class="extra-lbl"><i class="bi bi-plus-circle-dotted"></i> การวัดเพิ่มเติม:</span>
+              <?php foreach ($extra as $r): ?>
+                <button type="button" class="rc rc-extra" onclick='editRow(<?= json_encode($r, JSON_UNESCAPED_UNICODE | JSON_HEX_APOS | JSON_HEX_QUOT) ?>)'>
+                  <span class="period-badge p-<?= e($r['period']) ?>"><i class="bi <?= period_icon($r['period']) ?>"></i> <?= period_label($r['period']) ?> <?= $r['seq'] ?></span>
+                  <span class="rc-bp"><?= $r['sys'] !== null ? (int)$r['sys'] : '-' ?><span class="sep">/</span><?= $r['dia'] !== null ? (int)$r['dia'] : '-' ?></span>
+                  <?php if ($r['hr'] !== null): ?><span class="rc-hr">♥<?= (int)$r['hr'] ?></span><?php endif; ?>
+                </button>
+              <?php endforeach; ?>
+            </td>
+          </tr>
+          <?php endif; ?>
+        <?php endforeach; endif; ?>
         </tbody>
       </table>
     </div>
@@ -203,6 +245,7 @@ require __DIR__ . '/includes/header.php';
             <input type="text" name="note" id="f-note" class="form-control" placeholder="เช่น หลังออกกำลังกาย"></div>
         </div>
         <div class="modal-footer">
+          <button type="button" id="btnDelete" class="btn btn-outline-danger me-auto" style="display:none" onclick="deleteCurrent()"><i class="bi bi-trash"></i> ลบ</button>
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button>
           <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> บันทึก</button>
         </div>
@@ -210,5 +253,10 @@ require __DIR__ . '/includes/header.php';
     </div>
   </div>
 </div>
+
+<form method="post" action="save.php" id="deleteForm" style="display:none">
+  <input type="hidden" name="action" value="delete">
+  <input type="hidden" name="id" id="del-id">
+</form>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>

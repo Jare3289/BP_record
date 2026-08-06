@@ -182,6 +182,267 @@ function in_target(?int $sys, ?int $dia): bool
     return $sys !== null && $dia !== null && $sys < target_sys() && $dia < target_dia();
 }
 
+/**
+ * สร้าง HTML ปฏิทินสุขภาพ (Pixel) แนวนอน — วันที่ 1-31 = คอลัมน์, เดือน = แถว
+ * $dateLevel: ['Y-m-d' => level], $years: [ปี...], $curYear: ปีที่แสดงเริ่มต้น
+ */
+function pixel_calendar_html(array $dateLevel, array $years, string $curYear): string
+{
+    $monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
+    $lvlName  = [0=>'ปกติ',1=>'สูงเล็กน้อย',2=>'ระยะที่ 1',3=>'ระยะที่ 2',4=>'วิกฤต'];
+    $h = '';
+    foreach ($years as $y) {
+        $h .= '<div class="pixel-wrap ' . ((string)$y === (string)$curYear ? '' : 'd-none') . '" data-year="' . $y . '"><table class="pixel-grid"><thead><tr><th></th>';
+        for ($day = 1; $day <= 31; $day++) $h .= '<th class="px-dnum">' . $day . '</th>';
+        $h .= '</tr></thead><tbody>';
+        for ($mo = 1; $mo <= 12; $mo++) {
+            $h .= '<tr><td class="px-month">' . $monthsTH[$mo - 1] . '</td>';
+            for ($day = 1; $day <= 31; $day++) {
+                if (!checkdate($mo, $day, (int)$y)) { $h .= '<td class="px-void"></td>'; continue; }
+                $ds = sprintf('%04d-%02d-%02d', $y, $mo, $day);
+                $lv = $dateLevel[$ds] ?? null;
+                $cls = $lv === null ? 'px-empty' : ($lvlClass[$lv] ?? 'px-empty');
+                $tip = date('j/n/Y', strtotime($ds)) . ' · ' . ($lv === null ? 'ไม่มีข้อมูล' : ($lvlName[$lv] ?? ''));
+                $h .= '<td class="px-cell ' . $cls . '" data-tip="' . htmlspecialchars($tip, ENT_QUOTES) . '"></td>';
+            }
+            $h .= '</tr>';
+        }
+        $h .= '</tbody></table></div>';
+    }
+    $h .= '<div class="pixel-legend">'
+        . '<span><span class="px-cell px-normal"></span> ปกติ</span>'
+        . '<span><span class="px-cell px-elevated"></span> สูงเล็กน้อย</span>'
+        . '<span><span class="px-cell px-stage1"></span> ระยะที่ 1</span>'
+        . '<span><span class="px-cell px-stage2"></span> ระยะที่ 2</span>'
+        . '<span><span class="px-cell px-crisis"></span> วิกฤต</span>'
+        . '<span><span class="px-cell px-empty"></span> ไม่มีข้อมูล</span></div>';
+    return $h;
+}
+
+/** เตรียมข้อมูลสำหรับ pixel: [dateLevel, years, curYear] จาก group_days */
+function pixel_data(array $days): array
+{
+    $dateLevel = []; $years = [];
+    foreach ($days as $d) {
+        $dateLevel[$d['date']] = $d['bp']['level'];
+        $years[substr($d['date'], 0, 4)] = true;
+    }
+    $years = array_keys($years); rsort($years);
+    return [$dateLevel, $years, $years[0] ?? date('Y')];
+}
+
+/**
+ * แคตตาล็อกรายการตรวจสุขภาพ แบ่งเป็นกลุ่ม
+ * แต่ละรายการ: [code, ชื่อ, หน่วย, ค่าอ้างอิง(ข้อความ), low, high, type('num'|'text')]
+ */
+function checkup_catalog(): array
+{
+    return [
+        'เคมีในเลือด (Blood Chemistry)' => [
+            ['sugar', 'น้ำตาล (Sugar)', 'mg/dl', '70–99', 70, 99],
+            ['bun', 'การทำงานของไต (BUN)', 'mg/dl', '6–20', 6, 20],
+            ['creatinine', 'Creatinine', 'mg/dl', '0.67–1.17', 0.67, 1.17],
+            ['egfr', 'eGFR', 'ml/min', '≥90', 90, null],
+            ['uric', 'กรดยูริค (Uric Acid)', 'mg/dl', '3.4–7.0', 3.4, 7.0],
+            ['chol', 'โคเลสเตอรอล (Cholesterol)', 'mg/dl', '0–199', 0, 199],
+            ['tg', 'ไตรกลีเซอไรด์ (Triglyceride)', 'mg/dl', '0–150', 0, 150],
+            ['hdl', 'ไขมันดี (HDL)', 'mg/dl', '≥40', 40, null],
+            ['ldl', 'ไขมันไม่ดี (LDL)', 'mg/dl', '0–129', 0, 129],
+            ['sgot', 'ตับ SGOT', 'U/L', '0–50', 0, 50],
+            ['sgpt', 'ตับ SGPT', 'U/L', '0–50', 0, 50],
+            ['alp', 'Alk.Phosphatase', 'U/L', '40–129', 40, 129],
+            ['ca', 'แคลเซียม (Ca)', 'mg/dl', '8.6–10.2', 8.6, 10.2],
+            ['hba1c', 'HbA1c', '%', '<5.7', null, 5.7],
+            ['ggt', 'GAMMA GT', 'U/L', '10–71', 10, 71],
+            ['vitd', 'Vitamin D', 'ng/mL', '≥30', 30, null],
+        ],
+        'มะเร็ง / ไทรอยด์ / ไวรัส' => [
+            ['afp', 'มะเร็งตับ (AFP)', 'ng/ml', '0.0–7.0', 0, 7],
+            ['cea', 'มะเร็งลำไส้ (CEA)', 'ng/ml', '<3.8', null, 3.8],
+            ['psa', 'มะเร็งต่อมลูกหมาก (PSA)', 'ng/ml', '0–4', 0, 4],
+            ['ca125', 'CA125', 'U/ml', '<35', null, 35],
+            ['ca153', 'CA15-3', 'U/ml', '0–25', 0, 25],
+            ['ca199', 'CA19-9', 'U/ml', '0–39', 0, 39],
+            ['tsh', 'TSH', 'uIU/ml', '0.27–4.20', 0.27, 4.20],
+            ['ft4', 'FT4', 'ng/dl', '0.93–1.70', 0.93, 1.70],
+            ['ft3', 'FT3', 'pg/ml', '2.0–4.4', 2.0, 4.4],
+            ['esr', 'ESR', 'mm/hr', '0–9', 0, 9],
+            ['crp', 'CRP', 'mg/L', '<5.0', null, 5.0],
+            ['antihcv', 'Anti HCV', '', 'Negative', null, null, 'text'],
+            ['hbsag', 'HBs Ag', '', 'Negative', null, null, 'text'],
+            ['antihbs', 'Anti HBs', '', '-', null, null, 'text'],
+        ],
+        'ความสมบูรณ์ของเม็ดเลือด (CBC)' => [
+            ['rbc', 'เม็ดเลือดแดง (RBC)', 'mil/cu.mm', '4.5–6.0', 4.5, 6.0],
+            ['hb', 'ฮีโมโกลบิน (Hb)', 'g/dl', '13.0–18.0', 13, 18],
+            ['hct', 'ฮีมาโตคริต (Hct)', '%', '40–54', 40, 54],
+            ['mcv', 'ขนาดเม็ดเลือดแดง (MCV)', 'fL', '80–99', 80, 99],
+            ['wbc', 'เม็ดเลือดขาว (WBC)', 'cells/cu.mm', '4000–10000', 4000, 10000],
+            ['neu', 'Neutrophil', '%', '40–74', 40, 74],
+            ['lym', 'Lymphocyte', '%', '19–48', 19, 48],
+            ['mono', 'Monocyte', '%', '3–9', 3, 9],
+            ['eos', 'Eosinophil', '%', '0–7', 0, 7],
+            ['baso', 'Basophil', '%', '0–2', 0, 2],
+            ['plt', 'เกล็ดเลือด (Platelet)', 'Cells/cu.mm', '140000–450000', 140000, 450000],
+            ['morph', 'รูปร่างเม็ดเลือดแดง', '', 'Normal', null, null, 'text'],
+        ],
+        'ปัสสาวะ (Urine)' => [
+            ['u_color', 'สี (Color)', '', 'Yellow', null, null, 'text'],
+            ['u_appear', 'สภาพ (Appearance)', '', 'Clear', null, null, 'text'],
+            ['u_spgr', 'ความถ่วงจำเพาะ (Sp.gr)', '', '1.003–1.030', null, null, 'text'],
+            ['u_ph', 'ph', '', '5.0–8.0', null, null, 'text'],
+            ['u_protein', 'โปรตีน (Protein)', '', 'Negative', null, null, 'text'],
+            ['u_sugar', 'น้ำตาล (Sugar)', '', 'Negative', null, null, 'text'],
+            ['u_rbc', 'เม็ดเลือดแดง (RBC)', '/HPF', '0–2', null, null, 'text'],
+            ['u_wbc', 'เม็ดเลือดขาว (WBC)', '/HPF', '0–5', null, null, 'text'],
+            ['u_epi', 'เซลล์เยื่อบุผิว', '/HPF', '0–10', null, null, 'text'],
+            ['u_other', 'อื่น ๆ (Other)', '', '', null, null, 'text'],
+        ],
+        'อุจจาระ (Stool)' => [
+            ['s_color', 'Color', '', '', null, null, 'text'],
+            ['s_appear', 'Appearance', '', '', null, null, 'text'],
+            ['s_wbc', 'WBC/HPF', '', '', null, null, 'text'],
+            ['s_rbc', 'RBC/HPF', '', '', null, null, 'text'],
+            ['s_para', 'Parasites & Ova', '', '', null, null, 'text'],
+            ['s_occult', 'Occult Blood', '', '', null, null, 'text'],
+        ],
+    ];
+}
+
+/** แผนที่ code => รายการ (สำหรับค้นเร็ว) */
+function checkup_tests_map(): array
+{
+    static $m = null;
+    if ($m !== null) return $m;
+    $m = [];
+    foreach (checkup_catalog() as $tests) foreach ($tests as $t) $m[$t[0]] = $t;
+    return $m;
+}
+
+/** ประเมินค่า: '' (ปกติ/ข้อความ), 'low', 'high' */
+function checkup_flag(array $test, $val): string
+{
+    $type = $test[6] ?? 'num';
+    if ($type === 'text' || $val === null || $val === '' || !is_numeric($val)) return '';
+    $v = (float) $val; $low = $test[4]; $high = $test[5];
+    if ($low !== null && $v < $low) return 'low';
+    if ($high !== null && $v > $high) return 'high';
+    return 'ok';
+}
+
+/**
+ * แคตตาล็อกค่าสุขภาพที่บันทึกได้รายครั้ง
+ * code => [ชื่อ, หน่วย, ไอคอน, สี, target_low, target_high, step]
+ */
+function health_metrics(): array
+{
+    return [
+        'glucose'  => ['น้ำตาลปลายนิ้ว', 'mg/dl', 'bi-droplet-half', '#dc3545', 70, 140, '1'],
+        'weight'   => ['น้ำหนัก', 'กก.', 'bi-speedometer2', '#0d9488', null, null, '0.1'],
+        'waist'    => ['รอบเอว', 'ซม.', 'bi-rulers', '#65a30d', null, 90, '0.5'],
+        'sleep'    => ['การนอน', 'ชม.', 'bi-moon-stars-fill', '#6d4bb0', 7, 9, '0.5'],
+        'steps'    => ['ก้าวเดิน', 'ก้าว', 'bi-person-walking', '#2c5c7a', 6000, null, '100'],
+        'water'    => ['น้ำดื่ม', 'แก้ว', 'bi-cup-straw', '#0dcaf0', 8, null, '1'],
+        'exercise' => ['ออกกำลังกาย', 'นาที', 'bi-heart-pulse-fill', '#16a34a', 30, null, '5'],
+        'spo2'     => ['ออกซิเจนปลายนิ้ว', '%', 'bi-lungs-fill', '#0d6efd', 95, 100, '1'],
+        'temp'     => ['อุณหภูมิ', '°C', 'bi-thermometer-half', '#e0699a', 36, 37.5, '0.1'],
+        'mood'     => ['อารมณ์ (1-5)', '/5', 'bi-emoji-smile-fill', '#f2a71b', 3, 5, '1'],
+    ];
+}
+
+/** โหลดบันทึกค่าสุขภาพทั้งหมด (ปลอดภัยถ้าตารางยังไม่มี) */
+function load_health_logs(?string $metric = null, int $limit = 0): array
+{
+    try {
+        if ($metric) {
+            $sql = 'SELECT * FROM health_logs WHERE metric = ? ORDER BY log_date ASC, id ASC';
+            $stmt = db()->prepare($sql); $stmt->execute([$metric]);
+            $rows = $stmt->fetchAll();
+        } else {
+            $rows = db()->query('SELECT * FROM health_logs ORDER BY log_date DESC, id DESC')->fetchAll();
+        }
+        return $limit > 0 ? array_slice($rows, 0, $limit) : $rows;
+    } catch (Throwable $e) { return []; }
+}
+
+/** ค่าล่าสุดของแต่ละ metric => [metric => ['val','date']] */
+function health_latest(): array
+{
+    $out = [];
+    try {
+        foreach (db()->query('SELECT metric, val, log_date FROM health_logs ORDER BY log_date ASC, id ASC') as $r) {
+            $out[$r['metric']] = ['val' => $r['val'], 'date' => $r['log_date']];
+        }
+    } catch (Throwable $e) {}
+    return $out;
+}
+
+/** ประเมินค่า metric เทียบ target => '', 'low', 'high', 'ok' */
+function metric_flag(array $meta, $val): string
+{
+    if ($val === null || $val === '' || !is_numeric($val)) return '';
+    $v = (float) $val; $low = $meta[4]; $high = $meta[5];
+    if ($low !== null && $v < $low) return 'low';
+    if ($high !== null && $v > $high) return 'high';
+    return 'ok';
+}
+
+/** กราฟเส้นจิ๋ว (sparkline) จากชุดตัวเลข */
+function sparkline_svg(array $values, string $color = '#57b894', int $w = 120, int $h = 34): string
+{
+    $values = array_values(array_filter($values, fn($v) => is_numeric($v)));
+    $n = count($values);
+    if ($n === 0) return '';
+    if ($n === 1) $values = [$values[0], $values[0]];
+    $n = count($values);
+    $min = min($values); $max = max($values); $range = ($max - $min) ?: 1;
+    $pad = 3;
+    $x = fn($i) => $pad + $i / ($n - 1) * ($w - 2 * $pad);
+    $y = fn($v) => $h - $pad - ($v - $min) / $range * ($h - 2 * $pad);
+    $d = ''; foreach ($values as $i => $v) $d .= ($i ? 'L' : 'M') . sprintf('%.1f %.1f ', $x($i), $y($v));
+    $area = 'M ' . sprintf('%.1f %.1f', $x(0), $y($values[0]));
+    foreach ($values as $i => $v) $area .= ' L ' . sprintf('%.1f %.1f', $x($i), $y($v));
+    $area .= sprintf(' L %.1f %.1f L %.1f %.1f Z', $x($n - 1), $h - $pad, $x(0), $h - $pad);
+    return '<svg class="spark" viewBox="0 0 ' . $w . ' ' . $h . '" preserveAspectRatio="none">'
+        . '<path d="' . $area . '" fill="' . $color . '" opacity="0.14"/>'
+        . '<path d="' . trim($d) . '" fill="none" stroke="' . $color . '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+        . '<circle cx="' . sprintf('%.1f', $x($n - 1)) . '" cy="' . sprintf('%.1f', $y($values[$n - 1])) . '" r="2.5" fill="' . $color . '"/></svg>';
+}
+
+/** แหล่งอ้างอิงค่าปกติ (สำหรับแสดงในหน้าตรวจสุขภาพ) */
+function reference_sources(): array
+{
+    return [
+        ['ความดันโลหิต', 'เกณฑ์ ACC/AHA 2017 (วัดที่บ้าน 135/85, คลินิก 140/90)'],
+        ['ดัชนีมวลกาย (BMI)', 'เกณฑ์เอเชีย-แปซิฟิก (WHO Asia-Pacific 2004)'],
+        ['ระดับไขมันในเลือด', 'NCEP ATP III / แนวทางราชวิทยาลัยอายุรแพทย์ฯ'],
+        ['น้ำตาล / HbA1c', 'สมาคมโรคเบาหวานแห่งประเทศไทย (ADA/สมาคมฯ)'],
+        ['ค่าห้องปฏิบัติการ (Lab)', 'ช่วงอ้างอิงตามใบรายงานผลของห้องปฏิบัติการโรงพยาบาล'],
+        ['ค่าสุขภาพทั่วไป', 'คำแนะนำทั่วไป (นอน 7-9 ชม., เดิน ≥6,000 ก้าว, ดื่มน้ำ ~8 แก้ว/วัน)'],
+    ];
+}
+
+/** โหลดการตรวจสุขภาพทั้งหมด (ปลอดภัยถ้าตารางยังไม่มี) */
+function load_checkups(): array
+{
+    try {
+        return db()->query('SELECT * FROM checkups ORDER BY checkup_date DESC, id DESC')->fetchAll();
+    } catch (Throwable $e) { return []; }
+}
+
+/** โหลดผลตรวจของการตรวจหนึ่งครั้ง => [code => val] */
+function load_checkup_values(int $id): array
+{
+    try {
+        $stmt = db()->prepare('SELECT code, val FROM checkup_values WHERE checkup_id = ?');
+        $stmt->execute([$id]);
+        $out = [];
+        foreach ($stmt->fetchAll() as $r) $out[$r['code']] = $r['val'];
+        return $out;
+    } catch (Throwable $e) { return []; }
+}
+
 /** หาไฟล์รูปโปรไฟล์ที่มีอยู่จริง (รองรับ .png .jpg .jpeg .webp) */
 function resolve_profile_photo(array $profile, string $baseDir): ?string
 {

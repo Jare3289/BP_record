@@ -8,6 +8,17 @@ function resetForm() {
   if (id) id.value = '';
   const title = document.getElementById('formTitle');
   if (title) title.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มบันทึก';
+  const del = document.getElementById('btnDelete');
+  if (del) del.style.display = 'none';
+}
+
+function addForDay(date, period) {
+  resetForm();
+  const dt = document.getElementById('f-date');
+  if (dt && date) dt.value = date;
+  const per = document.getElementById('f-period');
+  if (per && period) per.value = period;
+  new bootstrap.Modal(document.getElementById('formModal')).show();
 }
 
 function editRow(r) {
@@ -21,7 +32,17 @@ function editRow(r) {
     if (el) el.value = (r[f] === null || r[f] === undefined) ? '' : r[f];
   });
   document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขบันทึก';
+  const del = document.getElementById('btnDelete');
+  if (del) del.style.display = '';
   new bootstrap.Modal(document.getElementById('formModal')).show();
+}
+
+function deleteCurrent() {
+  const id = document.getElementById('f-id').value;
+  if (!id) return;
+  if (!confirm('ต้องการลบการวัดนี้?')) return;
+  document.getElementById('del-id').value = id;
+  document.getElementById('deleteForm').submit();
 }
 
 // ===== ช่วงการรักษา (phases) =====
@@ -41,21 +62,121 @@ function editPhase(p) {
   new bootstrap.Modal(document.getElementById('phaseModal')).show();
 }
 
-// ===== ไฮไลต์จุดตามช่วง (หน้ากราฟ scatter) =====
-function highlightPhase(id, el) {
-  document.querySelectorAll('.phase-chip').forEach(c => c.classList.remove('active'));
-  if (el) el.classList.add('active');
+// ===== ไฮไลต์จุดตามช่วง (เลือกได้หลายช่วง) =====
+const activePhases = new Set();
+function renderScatter() {
+  const none = activePhases.size === 0;
+  const chipAll = document.getElementById('chip-all');
+  if (chipAll) chipAll.classList.toggle('active', none);
+  document.querySelectorAll('.phase-chip[data-phase]').forEach(c => {
+    c.classList.toggle('active', activePhases.has(c.dataset.phase));
+  });
   document.querySelectorAll('.scatter-pt').forEach(c => {
-    if (id === 'all') {
+    if (none) {
       c.style.opacity = '1';
       c.setAttribute('fill', c.dataset.base || '#2c5c7a');
-    } else if (c.dataset.phase === String(id)) {
+    } else if (activePhases.has(c.dataset.phase)) {
       c.style.opacity = '1';
       c.setAttribute('fill', c.dataset.color || '#57b894');
     } else {
-      c.style.opacity = '0.12';
+      c.style.opacity = '0.1';
       c.setAttribute('fill', c.dataset.base || '#2c5c7a');
     }
+  });
+}
+function togglePhase(id, el) {
+  id = String(id);
+  if (activePhases.has(id)) activePhases.delete(id); else activePhases.add(id);
+  renderScatter();
+}
+function clearPhases() { activePhases.clear(); renderScatter(); }
+
+// ===== เลือกจอมอนิเตอร์ที่จะแสดง =====
+function toggleMon(i, el) {
+  const mon = document.querySelector('.bp-monitor[data-mon="' + i + '"]');
+  if (!mon) return;
+  const show = mon.classList.toggle('d-none') === false;
+  el.classList.toggle('active', show);
+}
+
+// tooltip แสดงค่าเมื่อชี้/แตะจุด scatter
+document.addEventListener('DOMContentLoaded', () => {
+  const tip = document.getElementById('scatterTip');
+  if (!tip) return;
+  const box = tip.parentElement;
+  const show = (c) => {
+    const hr = c.dataset.hr ? ' · ♥ ' + c.dataset.hr : '';
+    const ph = c.dataset.phasename ? '<br><span class="st-ph">' + c.dataset.phasename + '</span>' : '';
+    tip.innerHTML = '<b>' + c.dataset.sys + '/' + c.dataset.dia + '</b> mmHg' + hr + '<br><span class="st-date">' + c.dataset.date + '</span>' + ph;
+    const br = box.getBoundingClientRect();
+    const cr = c.getBoundingClientRect();
+    tip.style.left = (cr.left - br.left + cr.width / 2) + 'px';
+    tip.style.top  = (cr.top - br.top - 8) + 'px';
+    tip.classList.add('show');
+    c.setAttribute('r', '7');
+  };
+  const hide = (c) => { tip.classList.remove('show'); if (c) c.setAttribute('r', '4.5'); };
+  document.querySelectorAll('.scatter-pt').forEach(c => {
+    c.addEventListener('mouseenter', () => show(c));
+    c.addEventListener('mouseleave', () => hide(c));
+    c.addEventListener('click', (e) => { e.stopPropagation(); show(c); });
+  });
+  box.addEventListener('click', () => hide(null));
+});
+
+// ===== Tooltip กลางสำหรับทุกกราฟ (hover/แตะ แล้วเห็นค่า) =====
+(function () {
+  let tip = null;
+  const ensure = () => {
+    if (!tip) { tip = document.createElement('div'); tip.className = 'g-tip'; document.body.appendChild(tip); }
+    return tip;
+  };
+  const textOf = (el) => {
+    if (!el || !el.getAttribute) return null;
+    const d = el.getAttribute('data-tip');
+    if (d) return d;
+    const tag = (el.tagName || '').toLowerCase();
+    if (['circle', 'rect', 'path', 'polyline', 'line'].includes(tag) && el.querySelector) {
+      const t = el.querySelector('title');
+      if (t) return t.textContent;
+    }
+    return null;
+  };
+  const move = (e) => {
+    let el = e.target, txt = null, hop = 0;
+    while (el && hop < 3) { txt = textOf(el); if (txt) break; el = el.parentElement; hop++; }
+    const t = ensure();
+    if (txt) {
+      t.textContent = txt;
+      t.style.left = e.clientX + 'px';
+      t.style.top = (e.clientY - 14) + 'px';
+      t.classList.add('show');
+    } else {
+      t.classList.remove('show');
+    }
+  };
+  document.addEventListener('pointermove', move, { passive: true });
+  document.addEventListener('pointerdown', move, { passive: true });
+  document.addEventListener('pointerleave', () => { if (tip) tip.classList.remove('show'); });
+  document.addEventListener('scroll', () => { if (tip) tip.classList.remove('show'); }, { passive: true });
+})();
+
+// ===== หน้าสุขภาพ: กรองตารางบันทึกตามชนิดค่า =====
+function healthTab(metric, el) {
+  document.querySelectorAll('.hl-table').forEach(() => {});
+  document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.hl-table tbody tr[data-metric]').forEach(tr => {
+    tr.style.display = (metric === 'all' || tr.dataset.metric === metric) ? '' : 'none';
+  });
+}
+
+// ===== แดชบอร์ด: กรองตารางการวัดล่าสุดตามช่วง =====
+function recFilter(period, el) {
+  document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.rec-table tbody tr[data-period]').forEach(tr => {
+    tr.style.display = (period === 'all' || tr.dataset.period === period) ? '' : 'none';
   });
 }
 
@@ -91,6 +212,53 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+// ===== ตรวจสุขภาพ (checkups) =====
+const CK_FIELDS = ['checkup_date','hospital','doctor','weight','height','sbp','dbp','pulse','xray','ekg','hbtyping','summary','note'];
+function resetCheckup() {
+  const f = document.getElementById('checkupForm');
+  if (f) f.reset();
+  const id = document.getElementById('c-id'); if (id) id.value = '';
+  const t = document.getElementById('ckTitle'); if (t) t.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มผลตรวจสุขภาพ';
+}
+function editCheckup(c) {
+  resetCheckup();
+  document.getElementById('c-id').value = c.id || '';
+  CK_FIELDS.forEach(k => { const el = document.getElementById('c-' + k); if (el) el.value = (c[k] === null || c[k] === undefined) ? '' : c[k]; });
+  const v = c.v || {};
+  Object.keys(v).forEach(code => { const el = document.getElementById('vc-' + code); if (el) el.value = v[code] === null ? '' : v[code]; });
+  document.getElementById('ckTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขผลตรวจสุขภาพ';
+  new bootstrap.Modal(document.getElementById('checkupModal')).show();
+}
+
+// ===== บันทึกค่าสุขภาพรายครั้ง (quick log) =====
+function quickLog(code) {
+  const m = (window.HEALTH_METRICS || {})[code];
+  document.getElementById('l-id').value = '';
+  document.getElementById('l-metric').value = code;
+  document.getElementById('l-val').value = '';
+  document.getElementById('l-note').value = '';
+  if (m) {
+    document.getElementById('l-title').textContent = m[0];
+    document.getElementById('l-unit').textContent = m[1];
+    document.getElementById('l-ic').innerHTML = '<i class="bi ' + m[2] + '"></i>';
+    document.getElementById('l-ic').style.color = m[3];
+    let ref = '';
+    if (m[4] !== null && m[5] !== null) ref = 'เกณฑ์แนะนำ ' + m[4] + '–' + m[5] + ' ' + m[1];
+    else if (m[4] !== null) ref = 'เกณฑ์แนะนำ ≥ ' + m[4] + ' ' + m[1];
+    else if (m[5] !== null) ref = 'เกณฑ์แนะนำ ≤ ' + m[5] + ' ' + m[1];
+    document.getElementById('l-ref').textContent = ref;
+  }
+  setTimeout(() => document.getElementById('l-val').focus(), 300);
+}
+function editHealth(l) {
+  quickLog(l.metric);
+  document.getElementById('l-id').value = l.id || '';
+  document.getElementById('l-val').value = l.val;
+  document.getElementById('l-date').value = l.log_date || l.date || '';
+  document.getElementById('l-note').value = l.note || '';
+  new bootstrap.Modal(document.getElementById('logModal')).show();
+}
 
 // ===== ค้นหาในตาราง =====
 document.addEventListener('DOMContentLoaded', () => {
