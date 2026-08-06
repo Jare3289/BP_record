@@ -1,0 +1,54 @@
+{
+  "name": "BP Record — บันทึกความดันโลหิต",
+  "short_name": "BP Record",
+  "description": "บันทึกความดันโลหิต ชีพจร น้ำหนัก และค่าสุขภาพ พร้อมกราฟแนวโน้ม",
+  "lang": "th",
+  "dir": "ltr",
+  "start_url": "dashboard.php",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d9488",
+  "theme_color": "#0d9488",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "เพิ่มค่าความดัน",
+      "short_name": "เพิ่มค่า",
+      "url": "index.php",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "กราฟแนวโน้ม",
+      "short_name": "กราฟ",
+      "url": "chart.php",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "สุขภาพ",
+      "short_name": "สุขภาพ",
+      "url": "health.php",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

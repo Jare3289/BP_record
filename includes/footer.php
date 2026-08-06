@@ -5,5 +5,13 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="assets/app.js"></script>
+<script>
+  // ลงทะเบียน Service Worker เพื่อรองรับ PWA / ใช้งานออฟไลน์
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+</script>
 </body>
 </html>
