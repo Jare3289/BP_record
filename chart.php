@@ -46,6 +46,23 @@ foreach ($byPhase as $k => $v) {
     ];
 }
 
+// รวมจอมอนิเตอร์: ภาพรวมทั้งหมด + แต่ละช่วง
+$oS = $oD = $oH = [];
+foreach ($daily as $d) {
+    if ($d['sys'] !== null) $oS[] = $d['sys'];
+    if ($d['dia'] !== null) $oD[] = $d['dia'];
+    if ($d['hr']  !== null) $oH[] = $d['hr'];
+}
+$monitors = [];
+if ($oS) {
+    $osys = (int) round(array_sum($oS) / count($oS));
+    $odia = $oD ? (int) round(array_sum($oD) / count($oD)) : 0;
+    $monitors[] = ['name' => 'ภาพรวมทั้งหมด', 'color' => '#2c5c7a', 'sys' => $osys, 'dia' => $odia,
+        'hr' => $oH ? (int) round(array_sum($oH) / count($oH)) : 0, 'days' => count($oS),
+        'bp' => classify_bp($osys, $odia), 'overall' => true];
+}
+foreach ($phaseStats as $ps) { $ps['overall'] = false; $monitors[] = $ps; }
+
 $weightPts = array_values(array_filter($daily, fn($d) => $d['weight'] !== null));
 $latestWH  = null;
 for ($i = count($daily) - 1; $i >= 0; $i--) {
@@ -189,24 +206,32 @@ require __DIR__ . '/includes/header.php';
     <div class="card app-card h-100">
       <div class="card-header"><i class="bi bi-activity"></i> ค่าเฉลี่ยตามช่วง (จอเครื่องวัด)</div>
       <div class="card-body">
-        <?php if (!$phaseStats): ?>
-          <p class="text-center text-secondary py-5"><i class="bi bi-signpost fs-3 d-block mb-2"></i>
-            ยังไม่มีช่วง — <a href="phases.php">เพิ่มช่วงการรักษา</a><br><span class="small">เพื่อเปรียบเทียบค่าก่อน/หลังกินยา</span></p>
+        <?php if (!$monitors): ?>
+          <p class="text-center text-secondary py-5"><i class="bi bi-activity fs-3 d-block mb-2"></i> ยังไม่มีข้อมูล</p>
         <?php else: ?>
+        <?php if (count($monitors) > 1): ?>
+        <div class="phase-chips mb-3" id="monChips">
+          <?php foreach ($monitors as $i => $m): ?>
+            <button class="phase-chip active" style="--pc:<?= e($m['color']) ?>" data-mon-toggle="<?= $i ?>" onclick="toggleMon('<?= $i ?>', this)">
+              <i class="bi <?= !empty($m['overall']) ? 'bi-grid-3x3-gap-fill' : 'bi-circle-fill' ?>"></i> <?= e($m['name']) ?>
+            </button>
+          <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
         <div class="monitor-grid">
-          <?php foreach ($phaseStats as $ps): ?>
-          <div class="bp-monitor" style="--pc:<?= e($ps['color']) ?>">
-            <div class="mon-head"><span class="mon-dot"></span> <?= e($ps['name']) ?> <span class="mon-days"><?= $ps['days'] ?> วัน</span></div>
+          <?php foreach ($monitors as $i => $m): ?>
+          <div class="bp-monitor <?= !empty($m['overall']) ? 'mon-overall' : '' ?>" data-mon="<?= $i ?>" style="--pc:<?= e($m['color']) ?>">
+            <div class="mon-head"><span class="mon-dot"></span> <?= e($m['name']) ?> <span class="mon-days"><?= $m['days'] ?> วัน</span></div>
             <div class="mon-screen">
-              <div class="mon-row"><span class="mon-lbl">SYS</span><span class="mon-val"><?= $ps['sys'] ?></span><span class="mon-unit">mmHg</span></div>
-              <div class="mon-row"><span class="mon-lbl">DIA</span><span class="mon-val"><?= $ps['dia'] ?></span><span class="mon-unit">mmHg</span></div>
-              <div class="mon-row pulse"><span class="mon-lbl"><i class="bi bi-heart-fill"></i></span><span class="mon-val sm"><?= $ps['hr'] ?></span><span class="mon-unit">/min</span></div>
-              <div class="mon-result"><?= e($ps['bp']['label']) ?></div>
+              <div class="mon-row"><span class="mon-lbl">SYS</span><span class="mon-val"><?= $m['sys'] ?></span><span class="mon-unit">mmHg</span></div>
+              <div class="mon-row"><span class="mon-lbl">DIA</span><span class="mon-val"><?= $m['dia'] ?></span><span class="mon-unit">mmHg</span></div>
+              <div class="mon-row pulse"><span class="mon-lbl"><i class="bi bi-heart-fill"></i></span><span class="mon-val sm"><?= $m['hr'] ?></span><span class="mon-unit">/min</span></div>
+              <div class="mon-result"><?= e($m['bp']['label']) ?></div>
             </div>
           </div>
           <?php endforeach; ?>
         </div>
-        <p class="text-center text-secondary small mt-3 mb-0"><i class="bi bi-info-circle"></i> ค่าเฉลี่ยความดันบน/ล่าง และชีพจร ของแต่ละช่วง</p>
+        <p class="text-center text-secondary small mt-3 mb-0"><i class="bi bi-info-circle"></i> กดชิปเพื่อเลือกว่าจะแสดงจอไหนบ้าง · เพิ่มช่วงได้ที่ <a href="phases.php">ช่วงการรักษา</a></p>
         <?php endif; ?>
       </div>
     </div>

@@ -83,23 +83,25 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
   <div class="row g-3">
     <div class="col-12 col-xxl-9">
       <div class="row g-3">
-        <!-- ค่าล่าสุด -->
+        <!-- ค่าล่าสุด = เครื่องวัดความดันสากล -->
         <div class="col-12 col-lg-4 widget" data-widget="latest">
-          <div class="hero-card h-100">
-            <div class="hero-top"><span class="hero-tag"><i class="bi bi-clock-history"></i> ค่าล่าสุด</span>
-              <?php if ($latest): ?><span class="badge-result <?= e($latest['bp']['class']) ?>"><?= e($latest['bp']['label']) ?></span><?php endif; ?></div>
-            <?php if ($latest): ?>
-            <div class="hero-body">
-              <div class="hero-bp"><?= num($latest['avg']['sys']) ?><span>/</span><?= num($latest['avg']['dia']) ?></div>
-              <div class="hero-unit">mmHg · <i class="bi bi-heart-pulse"></i> <?= num($latest['avg']['hr']) ?> bpm</div>
-              <div class="hero-date"><i class="bi bi-calendar-check"></i> <?= fmt_date($latest['date']) ?> · <?= count($latest['readings']) ?> ครั้ง</div>
+          <div class="bp-device h-100">
+            <div class="dev-top"><span class="dev-brand"><i class="bi bi-heart-pulse-fill"></i> BP MONITOR</span><span class="dev-mem">MEM · ค่าล่าสุด</span></div>
+            <div class="dev-screen">
+              <?php if ($latest): ?>
+              <div class="dev-status <?= e($latest['bp']['class']) ?>"><i class="bi bi-record-circle"></i> <?= e($latest['bp']['label']) ?></div>
+              <div class="dev-main">
+                <div class="dev-col"><span class="dev-lbl">SYS</span><span class="dev-val"><?= num($latest['avg']['sys']) ?></span><span class="dev-u">mmHg</span></div>
+                <div class="dev-sep"></div>
+                <div class="dev-col"><span class="dev-lbl">DIA</span><span class="dev-val"><?= num($latest['avg']['dia']) ?></span><span class="dev-u">mmHg</span></div>
+              </div>
+              <div class="dev-pulse"><span class="dev-lbl">PULSE</span> <i class="bi bi-heart-fill beat"></i> <span class="dev-pv"><?= num($latest['avg']['hr']) ?></span> <span class="dev-u">/min</span></div>
+              <div class="dev-foot"><i class="bi bi-calendar-check"></i> <?= fmt_date($latest['date']) ?> · <?= count($latest['readings']) ?> ครั้ง</div>
+              <?php else: ?>
+              <div class="dev-empty">-- / --<div class="dev-u mt-2">ยังไม่มีข้อมูล</div></div>
+              <?php endif; ?>
             </div>
-            <div class="hero-foot">
-              <a href="chart.php" class="hero-circle"><i class="bi bi-graph-up"></i></a>
-              <a href="index.php" class="hero-circle dark"><i class="bi bi-list-ul"></i></a>
-              <span class="hero-name">อัปเดตล่าสุด</span>
-            </div>
-            <?php else: ?><div class="hero-body"><div class="hero-unit">ยังไม่มีข้อมูล — <a href="index.php" class="text-white text-decoration-underline">เพิ่มบันทึก</a></div></div><?php endif; ?>
+            <div class="dev-btns"><a href="index.php" class="dev-btn"><i class="bi bi-plus-lg"></i></a><a href="chart.php" class="dev-btn"><i class="bi bi-graph-up"></i></a><a href="index.php" class="dev-btn"><i class="bi bi-list-ul"></i></a></div>
           </div>
         </div>
 
@@ -114,35 +116,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
               </span>
               <?php else: ?><span class="chip-soft"><?= e($curYear) ?></span><?php endif; ?>
             </div>
-            <?php foreach ($years as $y): ?>
-            <div class="pixel-wrap <?= $y===$curYear?'':'d-none' ?>" data-year="<?= $y ?>">
-              <table class="pixel-grid">
-                <thead><tr><th></th><?php for ($day = 1; $day <= 31; $day++): ?><th class="px-dnum"><?= $day ?></th><?php endfor; ?></tr></thead>
-                <tbody>
-                  <?php for ($mo = 1; $mo <= 12; $mo++): ?>
-                  <tr><td class="px-month"><?= $monthsTH[$mo-1] ?></td>
-                    <?php for ($day = 1; $day <= 31; $day++):
-                      if (!checkdate($mo, $day, (int)$y)) { echo '<td class="px-void"></td>'; continue; }
-                      $ds = sprintf('%04d-%02d-%02d', $y, $mo, $day);
-                      $lv = $dateLevel[$ds] ?? null;
-                      $cls = $lv === null ? 'px-empty' : ($lvlClass[$lv] ?? 'px-empty');
-                    ?>
-                      <td class="px-cell <?= $cls ?>" title="<?= e(date('j/n/Y', strtotime($ds))) ?>"></td>
-                    <?php endfor; ?>
-                  </tr>
-                  <?php endfor; ?>
-                </tbody>
-              </table>
-            </div>
-            <?php endforeach; ?>
-            <div class="pixel-legend">
-              <span><span class="px-cell px-normal"></span> ปกติ</span>
-              <span><span class="px-cell px-elevated"></span> สูงเล็กน้อย</span>
-              <span><span class="px-cell px-stage1"></span> ระยะที่ 1</span>
-              <span><span class="px-cell px-stage2"></span> ระยะที่ 2</span>
-              <span><span class="px-cell px-crisis"></span> วิกฤต</span>
-              <span><span class="px-cell px-empty"></span> ไม่มีข้อมูล</span>
-            </div>
+            <?= pixel_calendar_html($dateLevel, $years, $curYear) ?>
           </div>
         </div>
 
@@ -258,6 +232,20 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
         <div class="nc-big"><div class="text-white-50 small">ค่าเฉลี่ยความดัน</div><div class="nc-bp"><?= e($avgS) ?>/<?= e($avgD) ?></div></div>
       </div>
       </div>
+      <!-- เกณฑ์ ACC/AHA -->
+      <div class="widget" data-widget="ref">
+      <div class="soft-card acc-ref mt-3">
+        <div class="acc-title"><i class="bi bi-clipboard2-heart"></i> เกณฑ์การแปลผล <span>ACC/AHA</span></div>
+        <table class="acc-table">
+          <tr><td><span class="acc-dot" style="background:#16a34a"></span> ปกติ</td><td>&lt;120</td><td>&lt;80</td></tr>
+          <tr><td><span class="acc-dot" style="background:#65a30d"></span> สูงเล็กน้อย</td><td>120–129</td><td>&lt;80</td></tr>
+          <tr><td><span class="acc-dot" style="background:#d99a1a"></span> ระยะที่ 1</td><td>130–139</td><td>80–89</td></tr>
+          <tr><td><span class="acc-dot" style="background:#d1603a"></span> ระยะที่ 2</td><td>≥140</td><td>≥90</td></tr>
+          <tr><td><span class="acc-dot" style="background:#b91c1c"></span> วิกฤต</td><td>≥180</td><td>≥120</td></tr>
+        </table>
+        <div class="acc-head-lbl"><span>ระดับ</span><span>บน</span><span>ล่าง</span></div>
+      </div>
+      </div>
     </div>
   </div>
 </div>
@@ -284,7 +272,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
     <div id="widgetToggles" class="widget-toggles">
       <?php foreach ([
         'latest'=>'ค่าล่าสุด','pixel'=>'ปฏิทิน Pixel','gauge'=>'สรุประดับความดัน',
-        'control'=>'คุมได้ vs เกินเป้า','trend'=>'กราฟแนวโน้ม','recent'=>'รายการล่าสุด','summary'=>'สรุปค่าเฉลี่ย'] as $wid=>$lbl): ?>
+        'control'=>'คุมได้ vs เกินเป้า','trend'=>'กราฟแนวโน้ม','recent'=>'รายการล่าสุด','summary'=>'สรุปค่าเฉลี่ย','ref'=>'เกณฑ์ ACC/AHA'] as $wid=>$lbl): ?>
         <label class="wt-row"><span><?= $lbl ?></span>
           <input type="checkbox" class="form-check-input" data-widget-toggle="<?= $wid ?>" checked></label>
       <?php endforeach; ?>

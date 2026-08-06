@@ -8,12 +8,16 @@ function resetForm() {
   if (id) id.value = '';
   const title = document.getElementById('formTitle');
   if (title) title.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มบันทึก';
+  const del = document.getElementById('btnDelete');
+  if (del) del.style.display = 'none';
 }
 
-function addForDay(date) {
+function addForDay(date, period) {
   resetForm();
   const dt = document.getElementById('f-date');
   if (dt && date) dt.value = date;
+  const per = document.getElementById('f-period');
+  if (per && period) per.value = period;
   new bootstrap.Modal(document.getElementById('formModal')).show();
 }
 
@@ -28,7 +32,17 @@ function editRow(r) {
     if (el) el.value = (r[f] === null || r[f] === undefined) ? '' : r[f];
   });
   document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขบันทึก';
+  const del = document.getElementById('btnDelete');
+  if (del) del.style.display = '';
   new bootstrap.Modal(document.getElementById('formModal')).show();
+}
+
+function deleteCurrent() {
+  const id = document.getElementById('f-id').value;
+  if (!id) return;
+  if (!confirm('ต้องการลบการวัดนี้?')) return;
+  document.getElementById('del-id').value = id;
+  document.getElementById('deleteForm').submit();
 }
 
 // ===== ช่วงการรักษา (phases) =====
@@ -76,6 +90,14 @@ function togglePhase(id, el) {
   renderScatter();
 }
 function clearPhases() { activePhases.clear(); renderScatter(); }
+
+// ===== เลือกจอมอนิเตอร์ที่จะแสดง =====
+function toggleMon(i, el) {
+  const mon = document.querySelector('.bp-monitor[data-mon="' + i + '"]');
+  if (!mon) return;
+  const show = mon.classList.toggle('d-none') === false;
+  el.classList.toggle('active', show);
+}
 
 // tooltip แสดงค่าเมื่อชี้/แตะจุด scatter
 document.addEventListener('DOMContentLoaded', () => {

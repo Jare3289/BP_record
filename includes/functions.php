@@ -182,6 +182,54 @@ function in_target(?int $sys, ?int $dia): bool
     return $sys !== null && $dia !== null && $sys < target_sys() && $dia < target_dia();
 }
 
+/**
+ * สร้าง HTML ปฏิทินสุขภาพ (Pixel) แนวนอน — วันที่ 1-31 = คอลัมน์, เดือน = แถว
+ * $dateLevel: ['Y-m-d' => level], $years: [ปี...], $curYear: ปีที่แสดงเริ่มต้น
+ */
+function pixel_calendar_html(array $dateLevel, array $years, string $curYear): string
+{
+    $monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
+    $h = '';
+    foreach ($years as $y) {
+        $h .= '<div class="pixel-wrap ' . ((string)$y === (string)$curYear ? '' : 'd-none') . '" data-year="' . $y . '"><table class="pixel-grid"><thead><tr><th></th>';
+        for ($day = 1; $day <= 31; $day++) $h .= '<th class="px-dnum">' . $day . '</th>';
+        $h .= '</tr></thead><tbody>';
+        for ($mo = 1; $mo <= 12; $mo++) {
+            $h .= '<tr><td class="px-month">' . $monthsTH[$mo - 1] . '</td>';
+            for ($day = 1; $day <= 31; $day++) {
+                if (!checkdate($mo, $day, (int)$y)) { $h .= '<td class="px-void"></td>'; continue; }
+                $ds = sprintf('%04d-%02d-%02d', $y, $mo, $day);
+                $lv = $dateLevel[$ds] ?? null;
+                $cls = $lv === null ? 'px-empty' : ($lvlClass[$lv] ?? 'px-empty');
+                $h .= '<td class="px-cell ' . $cls . '" title="' . date('j/n/Y', strtotime($ds)) . '"></td>';
+            }
+            $h .= '</tr>';
+        }
+        $h .= '</tbody></table></div>';
+    }
+    $h .= '<div class="pixel-legend">'
+        . '<span><span class="px-cell px-normal"></span> ปกติ</span>'
+        . '<span><span class="px-cell px-elevated"></span> สูงเล็กน้อย</span>'
+        . '<span><span class="px-cell px-stage1"></span> ระยะที่ 1</span>'
+        . '<span><span class="px-cell px-stage2"></span> ระยะที่ 2</span>'
+        . '<span><span class="px-cell px-crisis"></span> วิกฤต</span>'
+        . '<span><span class="px-cell px-empty"></span> ไม่มีข้อมูล</span></div>';
+    return $h;
+}
+
+/** เตรียมข้อมูลสำหรับ pixel: [dateLevel, years, curYear] จาก group_days */
+function pixel_data(array $days): array
+{
+    $dateLevel = []; $years = [];
+    foreach ($days as $d) {
+        $dateLevel[$d['date']] = $d['bp']['level'];
+        $years[substr($d['date'], 0, 4)] = true;
+    }
+    $years = array_keys($years); rsort($years);
+    return [$dateLevel, $years, $years[0] ?? date('Y')];
+}
+
 /** หาไฟล์รูปโปรไฟล์ที่มีอยู่จริง (รองรับ .png .jpg .jpeg .webp) */
 function resolve_profile_photo(array $profile, string $baseDir): ?string
 {

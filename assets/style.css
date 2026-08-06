@@ -145,7 +145,7 @@ body { background: var(--bs-body-bg); }
 
 /* ---- กราฟ ---- */
 .chart-box { width: 100%; overflow-x: auto; text-align: center; }
-.bp-chart { width: 100%; max-width: 640px; height: auto; }
+.bp-chart { width: 100%; max-width: 100%; height: auto; display: block; }
 .bp-chart .axl { font-size: 12px; fill: var(--bs-secondary-color); }
 .bp-chart .axttl { font-size: 12px; fill: var(--bs-body-color); font-weight: 700; }
 .bp-chart circle { cursor: pointer; transition: r .1s; }
@@ -416,13 +416,12 @@ body { background: var(--bs-body-bg); }
 
 /* ===== PIXEL CHART (ปฏิทินสุขภาพ) ===== */
 .pixel-wrap { overflow-x: auto; }
-.pixel-grid { border-collapse: separate; border-spacing: 3px; margin: 4px auto 0; }
+.pixel-grid { border-collapse: separate; border-spacing: 3px; width: 100%; table-layout: fixed; margin: 4px 0 0; }
 .pixel-grid th { font-size: .68rem; color: var(--bs-secondary-color); font-weight: 600; text-align: center; padding: 0 1px 3px; }
-.pixel-grid .px-dnum { font-size: .56rem; min-width: 15px; }
-.pixel-grid .px-month { font-size: .68rem; color: var(--bs-secondary-color); font-weight: 600; text-align: right; padding-right: 6px; white-space: nowrap; }
-.px-cell { width: 15px; height: 15px; border-radius: 4px; background: var(--bs-tertiary-bg); }
-td.px-cell { padding: 0; }
-.px-void { width: 15px; height: 15px; }
+.pixel-grid .px-dnum { font-size: .56rem; }
+.pixel-grid .px-month { width: 44px; font-size: .68rem; color: var(--bs-secondary-color); font-weight: 600; text-align: right; padding-right: 6px; white-space: nowrap; }
+.px-cell { border-radius: 4px; background: var(--bs-tertiary-bg); }
+td.px-cell, td.px-void { height: 20px; padding: 0; }
 .px-empty { background: color-mix(in srgb, var(--bs-secondary-color) 14%, transparent); }
 .px-normal   { background: #6fbf8f; }
 .px-elevated { background: #b6d97f; }
@@ -454,6 +453,65 @@ td.px-cell { padding: 0; }
 .widget-toggles { display: flex; flex-direction: column; gap: 2px; }
 .wt-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 4px; border-bottom: 1px solid var(--bs-border-color); font-size: .9rem; cursor: pointer; }
 .wt-row:last-child { border-bottom: none; }
+
+/* ===== ตารางกริดแบบเดิม (เช้า/ก่อนนอน) ===== */
+.grid-table { font-size: .86rem; white-space: nowrap; }
+.grid-table thead th { background: var(--bs-tertiary-bg); vertical-align: middle; border-color: rgba(148,163,184,.25); }
+.grid-table .v-cell { cursor: pointer; font-weight: 600; transition: background .1s; }
+.grid-table .v-cell.dim { color: var(--bs-secondary-color); font-weight: 400; }
+.grid-table .v-cell:hover { background: rgba(87,184,148,.14); }
+.grid-table .v-empty { cursor: pointer; color: var(--bs-secondary-color); background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(148,163,184,.06) 4px, rgba(148,163,184,.06) 8px); }
+.grid-table .v-empty:hover { background: rgba(87,184,148,.12); color: var(--mint); }
+.grid-table .day-cell { border-left: 3px solid var(--mint); }
+.grid-table .extra-row td { background: var(--bs-tertiary-bg); border-top: none; padding-top: 4px; padding-bottom: 8px; }
+.extra-lbl { font-size: .76rem; color: var(--bs-secondary-color); margin-right: 6px; }
+.rc-extra { border: 1px solid var(--bs-border-color); background: var(--bs-body-bg); border-radius: 10px; padding: 3px 9px; margin: 2px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+.rc-extra:hover { border-color: var(--mint); }
+
+/* ===== เครื่องวัดความดันสากล (ค่าล่าสุด) ===== */
+.bp-device { display: flex; flex-direction: column; border-radius: 22px; padding: 14px;
+  background: linear-gradient(160deg, #f3f5f7, #dfe4e8); box-shadow: 0 10px 30px rgba(15,23,42,.14), inset 0 1px 0 #fff;
+  border: 1px solid rgba(255,255,255,.6); }
+[data-bs-theme="dark"] .bp-device { background: linear-gradient(160deg, #2a3138, #1a1f24); border-color: #3a444d; }
+.dev-top { display: flex; justify-content: space-between; align-items: center; font-size: .72rem; color: #64748b; font-weight: 600; padding: 2px 6px 10px; }
+.dev-brand { color: var(--brand-dark); letter-spacing: .5px; }
+.dev-screen { background: #0e1a16; border-radius: 16px; padding: 16px 18px; flex-grow: 1; box-shadow: inset 0 3px 14px rgba(0,0,0,.55); font-family: "Google Sans", ui-monospace, monospace; display: flex; flex-direction: column; justify-content: center; }
+.dev-status { font-size: .74rem; color: #7CFFB2; margin-bottom: 10px; display: inline-flex; align-items: center; gap: 5px; }
+.dev-status.bp-elevated { color: #cde86a; } .dev-status.bp-stage1 { color: #ffd36a; }
+.dev-status.bp-stage2 { color: #ff9a6a; } .dev-status.bp-crisis { color: #ff7a90; }
+.dev-main { display: flex; align-items: flex-end; gap: 10px; }
+.dev-col { display: flex; flex-direction: column; flex: 1; }
+.dev-sep { width: 2px; align-self: stretch; background: linear-gradient(#24463a, transparent); }
+.dev-lbl { font-size: .6rem; color: #5fd0a8; letter-spacing: 2px; }
+.dev-val { font-size: 3.1rem; font-weight: 800; color: #7CFFB2; line-height: .95; text-shadow: 0 0 14px rgba(124,255,178,.5); font-variant-numeric: tabular-nums; }
+.dev-u { font-size: .58rem; color: #4b6b60; }
+.dev-pulse { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #24463a; color: #ff9ab6; }
+.dev-pulse .dev-lbl { color: #f08aa8; }
+.dev-pulse .dev-pv { font-size: 1.5rem; font-weight: 800; text-shadow: 0 0 10px rgba(255,154,182,.4); }
+.dev-pulse .beat { animation: beat 1s ease-in-out infinite; }
+@keyframes beat { 0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} }
+.dev-foot { margin-top: 10px; font-size: .68rem; color: #6b8f82; }
+.dev-empty { text-align: center; color: #4b6b60; font-size: 2rem; font-weight: 800; padding: 20px 0; }
+.dev-btns { display: flex; gap: 8px; justify-content: center; padding: 12px 0 2px; }
+.dev-btn { width: 38px; height: 26px; border-radius: 8px; background: #cbd3da; color: #475569; display: grid; place-items: center; text-decoration: none; box-shadow: 0 2px 0 #aab4bd; transition: .1s; }
+.dev-btn:hover { background: var(--mint); color: #fff; box-shadow: 0 2px 0 var(--mint-dark); }
+[data-bs-theme="dark"] .dev-btn { background: #3a444d; color: #cbd5e1; box-shadow: 0 2px 0 #222a30; }
+
+/* จอภาพรวม เน้นกรอบ */
+.bp-monitor.mon-overall { outline: 2px solid var(--pc); outline-offset: 1px; }
+
+/* ===== การ์ดเกณฑ์ ACC/AHA ===== */
+.acc-ref { background: linear-gradient(160deg, var(--bs-tertiary-bg), var(--bs-body-bg)); }
+.acc-title { font-weight: 700; font-size: .92rem; margin-bottom: 10px; }
+.acc-title span { color: var(--brand-dark); font-size: .78rem; background: rgba(13,148,136,.12); padding: 1px 8px; border-radius: 999px; }
+[data-bs-theme="dark"] .acc-title span { color: var(--brand-light); }
+.acc-head-lbl { display: flex; font-size: .64rem; color: var(--bs-secondary-color); margin-top: 4px; }
+.acc-head-lbl span:first-child { flex: 1; } .acc-head-lbl span { width: 58px; text-align: center; }
+.acc-table { width: 100%; font-size: .82rem; }
+.acc-table td { padding: 5px 2px; border-bottom: 1px solid var(--bs-border-color); }
+.acc-table tr:last-child td { border-bottom: none; }
+.acc-table td:first-child { text-align: left; } .acc-table td:not(:first-child) { text-align: center; width: 58px; color: var(--bs-secondary-color); font-variant-numeric: tabular-nums; }
+.acc-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
 
 /* ---- footer ---- */
 .app-foot { margin-top: 34px; padding: 18px 0; color: var(--bs-secondary-color); font-size: .8rem; }
