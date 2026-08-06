@@ -232,6 +232,125 @@ function pixel_data(array $days): array
     return [$dateLevel, $years, $years[0] ?? date('Y')];
 }
 
+/**
+ * แคตตาล็อกรายการตรวจสุขภาพ แบ่งเป็นกลุ่ม
+ * แต่ละรายการ: [code, ชื่อ, หน่วย, ค่าอ้างอิง(ข้อความ), low, high, type('num'|'text')]
+ */
+function checkup_catalog(): array
+{
+    return [
+        'เคมีในเลือด (Blood Chemistry)' => [
+            ['sugar', 'น้ำตาล (Sugar)', 'mg/dl', '70–99', 70, 99],
+            ['bun', 'การทำงานของไต (BUN)', 'mg/dl', '6–20', 6, 20],
+            ['creatinine', 'Creatinine', 'mg/dl', '0.67–1.17', 0.67, 1.17],
+            ['egfr', 'eGFR', 'ml/min', '≥90', 90, null],
+            ['uric', 'กรดยูริค (Uric Acid)', 'mg/dl', '3.4–7.0', 3.4, 7.0],
+            ['chol', 'โคเลสเตอรอล (Cholesterol)', 'mg/dl', '0–199', 0, 199],
+            ['tg', 'ไตรกลีเซอไรด์ (Triglyceride)', 'mg/dl', '0–150', 0, 150],
+            ['hdl', 'ไขมันดี (HDL)', 'mg/dl', '≥40', 40, null],
+            ['ldl', 'ไขมันไม่ดี (LDL)', 'mg/dl', '0–129', 0, 129],
+            ['sgot', 'ตับ SGOT', 'U/L', '0–50', 0, 50],
+            ['sgpt', 'ตับ SGPT', 'U/L', '0–50', 0, 50],
+            ['alp', 'Alk.Phosphatase', 'U/L', '40–129', 40, 129],
+            ['ca', 'แคลเซียม (Ca)', 'mg/dl', '8.6–10.2', 8.6, 10.2],
+            ['hba1c', 'HbA1c', '%', '<5.7', null, 5.7],
+            ['ggt', 'GAMMA GT', 'U/L', '10–71', 10, 71],
+            ['vitd', 'Vitamin D', 'ng/mL', '≥30', 30, null],
+        ],
+        'มะเร็ง / ไทรอยด์ / ไวรัส' => [
+            ['afp', 'มะเร็งตับ (AFP)', 'ng/ml', '0.0–7.0', 0, 7],
+            ['cea', 'มะเร็งลำไส้ (CEA)', 'ng/ml', '<3.8', null, 3.8],
+            ['psa', 'มะเร็งต่อมลูกหมาก (PSA)', 'ng/ml', '0–4', 0, 4],
+            ['ca125', 'CA125', 'U/ml', '<35', null, 35],
+            ['ca153', 'CA15-3', 'U/ml', '0–25', 0, 25],
+            ['ca199', 'CA19-9', 'U/ml', '0–39', 0, 39],
+            ['tsh', 'TSH', 'uIU/ml', '0.27–4.20', 0.27, 4.20],
+            ['ft4', 'FT4', 'ng/dl', '0.93–1.70', 0.93, 1.70],
+            ['ft3', 'FT3', 'pg/ml', '2.0–4.4', 2.0, 4.4],
+            ['esr', 'ESR', 'mm/hr', '0–9', 0, 9],
+            ['crp', 'CRP', 'mg/L', '<5.0', null, 5.0],
+            ['antihcv', 'Anti HCV', '', 'Negative', null, null, 'text'],
+            ['hbsag', 'HBs Ag', '', 'Negative', null, null, 'text'],
+            ['antihbs', 'Anti HBs', '', '-', null, null, 'text'],
+        ],
+        'ความสมบูรณ์ของเม็ดเลือด (CBC)' => [
+            ['rbc', 'เม็ดเลือดแดง (RBC)', 'mil/cu.mm', '4.5–6.0', 4.5, 6.0],
+            ['hb', 'ฮีโมโกลบิน (Hb)', 'g/dl', '13.0–18.0', 13, 18],
+            ['hct', 'ฮีมาโตคริต (Hct)', '%', '40–54', 40, 54],
+            ['mcv', 'ขนาดเม็ดเลือดแดง (MCV)', 'fL', '80–99', 80, 99],
+            ['wbc', 'เม็ดเลือดขาว (WBC)', 'cells/cu.mm', '4000–10000', 4000, 10000],
+            ['neu', 'Neutrophil', '%', '40–74', 40, 74],
+            ['lym', 'Lymphocyte', '%', '19–48', 19, 48],
+            ['mono', 'Monocyte', '%', '3–9', 3, 9],
+            ['eos', 'Eosinophil', '%', '0–7', 0, 7],
+            ['baso', 'Basophil', '%', '0–2', 0, 2],
+            ['plt', 'เกล็ดเลือด (Platelet)', 'Cells/cu.mm', '140000–450000', 140000, 450000],
+            ['morph', 'รูปร่างเม็ดเลือดแดง', '', 'Normal', null, null, 'text'],
+        ],
+        'ปัสสาวะ (Urine)' => [
+            ['u_color', 'สี (Color)', '', 'Yellow', null, null, 'text'],
+            ['u_appear', 'สภาพ (Appearance)', '', 'Clear', null, null, 'text'],
+            ['u_spgr', 'ความถ่วงจำเพาะ (Sp.gr)', '', '1.003–1.030', null, null, 'text'],
+            ['u_ph', 'ph', '', '5.0–8.0', null, null, 'text'],
+            ['u_protein', 'โปรตีน (Protein)', '', 'Negative', null, null, 'text'],
+            ['u_sugar', 'น้ำตาล (Sugar)', '', 'Negative', null, null, 'text'],
+            ['u_rbc', 'เม็ดเลือดแดง (RBC)', '/HPF', '0–2', null, null, 'text'],
+            ['u_wbc', 'เม็ดเลือดขาว (WBC)', '/HPF', '0–5', null, null, 'text'],
+            ['u_epi', 'เซลล์เยื่อบุผิว', '/HPF', '0–10', null, null, 'text'],
+            ['u_other', 'อื่น ๆ (Other)', '', '', null, null, 'text'],
+        ],
+        'อุจจาระ (Stool)' => [
+            ['s_color', 'Color', '', '', null, null, 'text'],
+            ['s_appear', 'Appearance', '', '', null, null, 'text'],
+            ['s_wbc', 'WBC/HPF', '', '', null, null, 'text'],
+            ['s_rbc', 'RBC/HPF', '', '', null, null, 'text'],
+            ['s_para', 'Parasites & Ova', '', '', null, null, 'text'],
+            ['s_occult', 'Occult Blood', '', '', null, null, 'text'],
+        ],
+    ];
+}
+
+/** แผนที่ code => รายการ (สำหรับค้นเร็ว) */
+function checkup_tests_map(): array
+{
+    static $m = null;
+    if ($m !== null) return $m;
+    $m = [];
+    foreach (checkup_catalog() as $tests) foreach ($tests as $t) $m[$t[0]] = $t;
+    return $m;
+}
+
+/** ประเมินค่า: '' (ปกติ/ข้อความ), 'low', 'high' */
+function checkup_flag(array $test, $val): string
+{
+    $type = $test[6] ?? 'num';
+    if ($type === 'text' || $val === null || $val === '' || !is_numeric($val)) return '';
+    $v = (float) $val; $low = $test[4]; $high = $test[5];
+    if ($low !== null && $v < $low) return 'low';
+    if ($high !== null && $v > $high) return 'high';
+    return 'ok';
+}
+
+/** โหลดการตรวจสุขภาพทั้งหมด (ปลอดภัยถ้าตารางยังไม่มี) */
+function load_checkups(): array
+{
+    try {
+        return db()->query('SELECT * FROM checkups ORDER BY checkup_date DESC, id DESC')->fetchAll();
+    } catch (Throwable $e) { return []; }
+}
+
+/** โหลดผลตรวจของการตรวจหนึ่งครั้ง => [code => val] */
+function load_checkup_values(int $id): array
+{
+    try {
+        $stmt = db()->prepare('SELECT code, val FROM checkup_values WHERE checkup_id = ?');
+        $stmt->execute([$id]);
+        $out = [];
+        foreach ($stmt->fetchAll() as $r) $out[$r['code']] = $r['val'];
+        return $out;
+    } catch (Throwable $e) { return []; }
+}
+
 /** หาไฟล์รูปโปรไฟล์ที่มีอยู่จริง (รองรับ .png .jpg .jpeg .webp) */
 function resolve_profile_photo(array $profile, string $baseDir): ?string
 {

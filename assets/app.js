@@ -194,6 +194,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+// ===== ตรวจสุขภาพ (checkups) =====
+const CK_FIELDS = ['checkup_date','hospital','doctor','weight','height','sbp','dbp','pulse','xray','ekg','hbtyping','summary','note'];
+function resetCheckup() {
+  const f = document.getElementById('checkupForm');
+  if (f) f.reset();
+  const id = document.getElementById('c-id'); if (id) id.value = '';
+  const t = document.getElementById('ckTitle'); if (t) t.innerHTML = '<i class="bi bi-plus-circle"></i> เพิ่มผลตรวจสุขภาพ';
+}
+function editCheckup(c) {
+  resetCheckup();
+  document.getElementById('c-id').value = c.id || '';
+  CK_FIELDS.forEach(k => { const el = document.getElementById('c-' + k); if (el) el.value = (c[k] === null || c[k] === undefined) ? '' : c[k]; });
+  const v = c.v || {};
+  Object.keys(v).forEach(code => { const el = document.getElementById('vc-' + code); if (el) el.value = v[code] === null ? '' : v[code]; });
+  document.getElementById('ckTitle').innerHTML = '<i class="bi bi-pencil-square"></i> แก้ไขผลตรวจสุขภาพ';
+  new bootstrap.Modal(document.getElementById('checkupModal')).show();
+}
+
 // ===== ค้นหาในตาราง =====
 document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('tableSearch');

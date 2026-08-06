@@ -57,6 +57,11 @@ if ($hasPhoto) $profile['photo'] = $photoPath;
             <i class="bi bi-signpost-split"></i> ช่วงการรักษา
           </a>
         </li>
+        <li class="nav-item">
+          <a class="nav-link <?= $ACTIVE === 'checkups' ? 'active' : '' ?>" href="checkups.php">
+            <i class="bi bi-clipboard2-pulse"></i> ตรวจสุขภาพ
+          </a>
+        </li>
       </ul>
       <div class="d-flex align-items-center gap-2">
         <button class="btn btn-theme" id="themeToggle" type="button" title="สลับโหมดสว่าง/มืด">
