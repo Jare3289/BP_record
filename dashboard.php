@@ -2,15 +2,14 @@
 require __DIR__ . '/includes/config.php';
 require __DIR__ . '/includes/functions.php';
 
-$days   = group_days(all_readings());   // เก่า→ใหม่
+$readings = all_readings();
+$days   = group_days($readings);   // เก่า→ใหม่
 $phases = load_phases();
 $tSys = target_sys(); $tDia = target_dia();
 
 $sumS = $sumD = $sumH = 0; $nS = $nD = $nH = 0;
 $levelCount = [0=>0,1=>0,2=>0,3=>0,4=>0];
-$inRange = 0;
-$dateLevel = [];               // 'Y-m-d' => level (สำหรับ pixel chart)
-$years = [];
+$inRange = 0; $dateLevel = [];
 foreach ($days as $d) {
     $a = $d['avg']; $bp = $d['bp'];
     if ($a['sys'] !== null) { $sumS += $a['sys']; $nS++; }
@@ -19,7 +18,6 @@ foreach ($days as $d) {
     if ($bp['level'] >= 0) $levelCount[$bp['level']]++;
     if (in_target($a['sys'], $a['dia'])) $inRange++;
     $dateLevel[$d['date']] = $bp['level'];
-    $years[substr($d['date'], 0, 4)] = true;
 }
 $total = count($days);
 $avgS = $nS ? round($sumS/$nS) : null;
@@ -32,235 +30,244 @@ $pctRange = $total ? round($inRange/$total*100) : 0;
 $pctHigh  = 100 - $pctRange;
 $currentPhase = $latest ? phase_for_date($phases, $latest['date']) : null;
 
-$years = array_keys($years); rsort($years);
-$curYear = $years[0] ?? date('Y');
+$monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 
-$last14 = array_slice($days, -14);
+// ค่าเฉลี่ยความดันบนรายเดือน (6 เดือนล่าสุด)
+$byMonth = [];
+foreach ($days as $d) if ($d['avg']['sys'] !== null) $byMonth[substr($d['date'],0,7)][] = $d['avg']['sys'];
+ksort($byMonth);
+$mk = array_slice(array_keys($byMonth), -6);
+$monthPts = [];
+foreach ($mk as $ym) { $arr = $byMonth[$ym]; $monthPts[] = ['lbl' => $monthsTH[(int)substr($ym,5,2)-1], 'sys' => (int)round(array_sum($arr)/count($arr))]; }
+$mvals = array_map(fn($p) => $p['sys'], $monthPts);
+$heroTrend = count($mvals) >= 2 ? $mvals[count($mvals)-1] - $mvals[count($mvals)-2] : 0;
+
+// การวัดตามช่วง
+$periodCount = ['morning'=>0,'noon'=>0,'evening'=>0,'bedtime'=>0];
+foreach ($readings as $r) if (isset($periodCount[$r['period']])) $periodCount[$r['period']]++;
+
+// การวัดล่าสุด (รายครั้ง)
+$recent = [];
+foreach ($daysDesc as $d) {
+    foreach (array_reverse($d['readings']) as $r) {
+        $recent[] = ['date' => $d['date'], 'r' => $r, 'bp' => classify_bp($r['sys'] !== null ? (int)$r['sys'] : null, $r['dia'] !== null ? (int)$r['dia'] : null)];
+    }
+    if (count($recent) >= 12) break;
+}
+$recent = array_slice($recent, 0, 12);
+
+// ปฏิทินเดือนล่าสุด
+$calDate = $latest ? $latest['date'] : date('Y-m-d');
+$calY = (int)substr($calDate,0,4); $calM = (int)substr($calDate,5,2);
+$firstDow = (int)date('w', mktime(0,0,0,$calM,1,$calY));
+$daysInMonth = (int)date('t', mktime(0,0,0,$calM,1,$calY));
+$latestDay = $latest ? (int)substr($latest['date'],8,2) : 0;
 
 $greet = (int)date('H') < 12 ? 'สวัสดีตอนเช้า' : ((int)date('H') < 18 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนค่ำ');
-
 $msg = $_GET['msg'] ?? '';
 $flash = $msg === 'saved' ? 'บันทึกการตั้งค่าแล้ว' : null;
+$lvlMeta = [0=>['ปกติ','#16a34a'],1=>['สูงเล็กน้อย','#65a30d'],2=>['ระยะที่ 1','#d99a1a'],3=>['ระยะที่ 2','#d1603a'],4=>['วิกฤต','#b91c1c']];
 
 $PAGE = 'แดชบอร์ด'; $ACTIVE = 'dashboard';
 require __DIR__ . '/includes/header.php';
-
-$monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-$lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
 ?>
 
 <div class="dash">
-  <?php if ($flash): ?><div class="alert alert-success d-flex align-items-center gap-2"><i class="bi bi-check-circle-fill"></i> <?= e($flash) ?></div><?php endif; ?>
-
-  <!-- HEADER โปรไฟล์ -->
-  <section class="profile-hero mb-4">
-    <div class="ph-glow"></div>
-    <div class="ph-main">
-      <div class="ph-photo <?= $hasPhoto ? '' : 'noimg' ?>">
-        <?php if ($hasPhoto): ?><img src="<?= e($profile['photo']) ?>" alt="<?= e($profile['name']) ?>"><?php else: ?><i class="bi bi-person-fill"></i><?php endif; ?>
-        <span class="ph-status"><i class="bi bi-heart-pulse-fill"></i></span>
-      </div>
-      <div class="ph-info">
-        <div class="ph-greet"><?= $greet ?> 👋</div>
-        <h1 class="ph-name"><?= e($profile['name']) ?></h1>
-        <span class="ph-role"><i class="bi bi-patch-check-fill"></i> <?= e($profile['role']) ?></span>
-        <?php if ($currentPhase): ?><span class="ph-role ms-2" style="background:color-mix(in srgb, <?= e($currentPhase['color']) ?> 45%, transparent)"><i class="bi bi-signpost-split"></i> <?= e($currentPhase['name']) ?></span><?php endif; ?>
-      </div>
+  <!-- หัวเรื่อง -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <div class="text-secondary small"><i class="bi bi-house-door"></i> แดชบอร์ด / สุขภาพความดัน</div>
+      <h1 class="page-title mb-0"><?= $greet ?>, <?= e($profile['name']) ?> 👋</h1>
     </div>
-    <div class="ph-side">
-      <div class="ph-stats">
-        <div class="ph-stat"><div class="ph-stat-n"><?= $total ?></div><div class="ph-stat-l">วันที่บันทึก</div></div>
-        <div class="ph-stat"><div class="ph-stat-n"><?= e($avgS) ?>/<?= e($avgD) ?></div><div class="ph-stat-l">ค่าเฉลี่ยรวม</div></div>
-        <div class="ph-stat"><div class="ph-stat-n"><?= $pctRange ?>%</div><div class="ph-stat-l">คุมได้</div></div>
-      </div>
-      <div class="ph-actions">
-        <button class="pill-btn glass" data-bs-toggle="offcanvas" data-bs-target="#settingsPanel"><i class="bi bi-sliders"></i> ปรับแดชบอร์ด</button>
-        <a href="index.php" class="pill-btn pill-primary"><i class="bi bi-plus-lg"></i> เพิ่มบันทึก</a>
-      </div>
+    <div class="d-flex align-items-center gap-2">
+      <?php if ($flash): ?><span class="badge text-bg-success"><i class="bi bi-check-circle"></i> <?= e($flash) ?></span><?php endif; ?>
+      <button class="pill-btn" data-bs-toggle="offcanvas" data-bs-target="#settingsPanel"><i class="bi bi-sliders"></i> เป้าหมาย</button>
+      <a href="index.php" class="pill-btn pill-primary"><i class="bi bi-plus-lg"></i> เพิ่มบันทึก</a>
     </div>
-  </section>
+  </div>
 
   <div class="row g-3">
-    <div class="col-12 col-xxl-9">
-      <div class="row g-3">
-        <!-- ค่าล่าสุด = เครื่องวัดความดันสากล -->
-        <div class="col-12 col-lg-4 widget" data-widget="latest">
-          <div class="bp-device h-100">
-            <div class="dev-top"><span class="dev-brand"><i class="bi bi-heart-pulse-fill"></i> BP MONITOR</span><span class="dev-mem">MEM · ค่าล่าสุด</span></div>
-            <div class="dev-screen">
-              <?php if ($latest): ?>
-              <div class="dev-status <?= e($latest['bp']['class']) ?>"><i class="bi bi-record-circle"></i> <?= e($latest['bp']['label']) ?></div>
-              <div class="dev-rows">
-                <div class="dev-r"><span class="dev-lbl">SYS</span><span class="dev-val"><?= num($latest['avg']['sys']) ?></span><span class="dev-u">mmHg</span></div>
-                <div class="dev-r"><span class="dev-lbl">DIA</span><span class="dev-val"><?= num($latest['avg']['dia']) ?></span><span class="dev-u">mmHg</span></div>
-                <div class="dev-r pulse"><span class="dev-lbl">PULSE</span><i class="bi bi-heart-fill beat"></i><span class="dev-val pv"><?= num($latest['avg']['hr']) ?></span><span class="dev-u">/min</span></div>
-              </div>
-              <div class="dev-foot"><i class="bi bi-calendar-check"></i> <?= fmt_date($latest['date']) ?> · <?= count($latest['readings']) ?> ครั้ง</div>
-              <?php else: ?>
-              <div class="dev-empty">-- / --<div class="dev-u mt-2">ยังไม่มีข้อมูล</div></div>
-              <?php endif; ?>
-            </div>
-            <div class="dev-btns"><a href="index.php" class="dev-btn"><i class="bi bi-plus-lg"></i></a><a href="chart.php" class="dev-btn"><i class="bi bi-graph-up"></i></a><a href="index.php" class="dev-btn"><i class="bi bi-list-ul"></i></a></div>
-          </div>
-        </div>
+    <!-- HERO ค่าเฉลี่ยความดัน -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="bento-hero h-100">
+        <div class="bh-icon"><i class="bi bi-heart-pulse-fill"></i></div>
+        <div class="bh-bignum"><?= e($avgS) ?><span>/</span><?= e($avgD) ?></div>
+        <?php if ($heroTrend !== 0): ?>
+          <span class="bh-trend <?= $heroTrend < 0 ? 'good' : 'bad' ?>"><i class="bi bi-arrow-<?= $heroTrend < 0 ? 'down' : 'up' ?>"></i> <?= abs($heroTrend) ?> vs เดือนก่อน</span>
+        <?php endif; ?>
+        <div class="bh-label">ค่าเฉลี่ยความดัน (mmHg)</div>
+        <div class="bh-foot"><span class="badge-result <?= e($overall['class']) ?>"><?= e($overall['label']) ?></span></div>
+      </div>
+    </div>
 
-        <!-- PIXEL CHART -->
-        <div class="col-12 col-lg-8 widget" data-widget="pixel">
-          <div class="soft-card h-100">
-            <div class="card-mini-head">
-              <span><i class="bi bi-grid-3x3-gap-fill"></i> ปฏิทินสุขภาพรายวัน (Pixel)</span>
-              <?php if (count($years) > 1): ?>
-              <span class="year-chips">
-                <?php foreach ($years as $y): ?><button class="year-chip <?= $y===$curYear?'active':'' ?>" onclick="showYear('<?= $y ?>',this)"><?= $y ?></button><?php endforeach; ?>
-              </span>
-              <?php else: ?><span class="chip-soft"><?= e($curYear) ?></span><?php endif; ?>
-            </div>
-            <?= pixel_calendar_html($dateLevel, $years, $curYear) ?>
-          </div>
-        </div>
+    <!-- สถิติย่อ -->
+    <div class="col-6 col-md-3 col-xl-2">
+      <div class="stat-tile h-100">
+        <div class="st-ic ok"><i class="bi bi-emoji-smile"></i></div>
+        <div><div class="st-lbl">วันที่คุมได้</div><div class="st-num"><?= $inRange ?></div><div class="st-sub"><?= $pctRange ?>% ของทั้งหมด</div></div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 col-xl-2">
+      <div class="stat-tile h-100">
+        <div class="st-ic warn"><i class="bi bi-exclamation-triangle"></i></div>
+        <div><div class="st-lbl">วันที่เกินเป้า</div><div class="st-num"><?= $total-$inRange ?></div><div class="st-sub"><?= $pctHigh ?>% ของทั้งหมด</div></div>
+      </div>
+    </div>
 
-        <!-- Gauge -->
-        <div class="col-12 col-lg-6 widget" data-widget="gauge">
-          <div class="soft-card h-100">
-            <div class="card-mini-head"><span>สรุปผลการวัด</span><a href="index.php" class="mini-more"><i class="bi bi-chevron-right"></i></a></div>
-            <h5 class="mb-3">ระดับความดันรวม</h5>
-            <?php
-              $segments = [
-                ['n'=>$levelCount[0],'c'=>'#16a34a','label'=>'ปกติ'],
-                ['n'=>$levelCount[1],'c'=>'#65a30d','label'=>'สูงเล็กน้อย'],
-                ['n'=>$levelCount[2],'c'=>'#d99a1a','label'=>'ระยะที่ 1'],
-                ['n'=>$levelCount[3]+$levelCount[4],'c'=>'#d1603a','label'=>'ระยะที่ 2+'],
-              ];
-              $sumSeg = max(1, array_sum(array_column($segments,'n')));
-              $cx=130;$cy=118;$rad=92;$sw=22;
-              $arc = function($f0,$f1) use ($cx,$cy,$rad){
-                $a0=M_PI*(1+$f0);$a1=M_PI*(1+$f1);
-                return sprintf('M %.1f %.1f A %d %d 0 0 1 %.1f %.1f',$cx+$rad*cos($a0),$cy+$rad*sin($a0),$rad,$rad,$cx+$rad*cos($a1),$cy+$rad*sin($a1));};
-            ?>
-            <div class="gauge-wrap"><svg viewBox="0 0 260 150" class="gauge-svg">
-              <path d="<?= $arc(0,1) ?>" fill="none" stroke="var(--bs-tertiary-bg)" stroke-width="<?= $sw ?>" stroke-linecap="round"/>
-              <?php $acc=0; foreach($segments as $sg){ if($sg['n']<=0)continue; $f0=$acc/$sumSeg;$acc+=$sg['n'];$f1=$acc/$sumSeg; echo '<path d="'.$arc($f0,$f1).'" fill="none" stroke="'.$sg['c'].'" stroke-width="'.$sw.'" stroke-linecap="round" data-tip="'.htmlspecialchars($sg['label'].' · '.$sg['n'].' วัน',ENT_QUOTES).'"/>'; } ?>
-              <text x="130" y="112" text-anchor="middle" class="gauge-num"><?= $total ?></text>
-              <text x="130" y="132" text-anchor="middle" class="gauge-cap">วันที่บันทึก</text>
-            </svg></div>
-            <div class="legend-list">
-              <?php foreach($segments as $sg): ?><div class="ll-row"><span class="ll-dot" style="background:<?= $sg['c'] ?>"></span><span class="ll-name"><?= $sg['label'] ?></span><span class="ll-val"><?= $sg['n'] ?> วัน</span></div><?php endforeach; ?>
-            </div>
-          </div>
-        </div>
+    <!-- กราฟเส้นรายเดือน -->
+    <div class="col-12 col-xl-5">
+      <div class="soft-card h-100">
+        <div class="card-mini-head"><span><i class="bi bi-graph-up"></i> ความดันบนเฉลี่ยรายเดือน</span><span class="chip-soft"><?= count($monthPts) ?> เดือนล่าสุด</span></div>
+        <?php if ($monthPts):
+          $LW=520;$LH=170;$lL=30;$lR=12;$lT=14;$lB=28;$lpw=$LW-$lL-$lR;$lph=$LH-$lT-$lB;
+          $ymin=max(90,(min($mvals)-10));$ymax=min(180,(max($mvals)+10)); if($ymax-$ymin<20){$ymax=$ymin+20;}
+          $n=count($monthPts);
+          $lx=fn($i)=>$lL+($n<=1?$lpw/2:$i/($n-1)*$lpw);
+          $ly=fn($v)=>$lT+($ymax-max($ymin,min($ymax,$v)))/($ymax-$ymin)*$lph;
+          $line='';foreach($monthPts as $i=>$p)$line.=($i?'L':'M').sprintf('%.1f %.1f ',$lx($i),$ly($p['sys']));
+          $area='M '.sprintf('%.1f %.1f',$lx(0),$ly($monthPts[0]['sys']));foreach($monthPts as $i=>$p)$area.=' L '.sprintf('%.1f %.1f',$lx($i),$ly($p['sys']));
+          $area.=sprintf(' L %.1f %.1f L %.1f %.1f Z',$lx($n-1),$lT+$lph,$lx(0),$lT+$lph);
+        ?>
+        <div class="chart-box"><svg viewBox="0 0 <?= $LW ?> <?= $LH ?>" class="line-svg" style="aspect-ratio:<?= $LW ?>/<?= $LH ?>">
+          <defs><linearGradient id="gM" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#57b894" stop-opacity=".3"/><stop offset="1" stop-color="#57b894" stop-opacity="0"/></linearGradient></defs>
+          <path d="<?= $area ?>" fill="url(#gM)"/>
+          <path d="<?= trim($line) ?>" fill="none" stroke="#2e9e78" stroke-width="2.5" stroke-linejoin="round"/>
+          <?php foreach($monthPts as $i=>$p): ?>
+            <circle cx="<?= sprintf('%.1f',$lx($i)) ?>" cy="<?= sprintf('%.1f',$ly($p['sys'])) ?>" r="4" fill="#fff" stroke="#2e9e78" stroke-width="2" data-tip="<?= e($p['lbl'].' · '.$p['sys']) ?>"/>
+            <text x="<?= sprintf('%.1f',$lx($i)) ?>" y="<?= $lT+$lph+18 ?>" text-anchor="middle" class="axl"><?= e($p['lbl']) ?></text>
+          <?php endforeach; ?>
+        </svg></div>
+        <?php else: ?><p class="text-center text-secondary py-4">ยังไม่มีข้อมูล</p><?php endif; ?>
+      </div>
+    </div>
 
-        <!-- คุมได้ vs เกินเป้า -->
-        <div class="col-12 col-lg-6 widget" data-widget="control">
-          <div class="soft-card h-100">
-            <div class="card-mini-head"><span>สถิติการควบคุม</span>
-              <button class="chip-soft border-0" data-bs-toggle="offcanvas" data-bs-target="#settingsPanel"><i class="bi bi-gear"></i> เป้า &lt; <?= $tSys ?>/<?= $tDia ?></button></div>
-            <h5 class="mb-3">คุมได้ vs เกินเป้า</h5>
-            <div class="row g-2 mb-3">
-              <div class="col-6"><div class="kpi-box green"><div class="kpi-n"><?= $inRange ?></div><div class="kpi-l"><i class="bi bi-emoji-smile"></i> วันที่คุมได้ (<?= $pctRange ?>%)</div></div></div>
-              <div class="col-6"><div class="kpi-box gray"><div class="kpi-n"><?= $total-$inRange ?></div><div class="kpi-l"><i class="bi bi-emoji-frown"></i> วันที่เกินเป้า (<?= $pctHigh ?>%)</div></div></div>
-            </div>
-            <div class="barchart">
-              <?php foreach (array_slice($days,-16) as $d): $s=$d['avg']['sys'];$dd=$d['avg']['dia'];
-                $ok=in_target($s,$dd); $h=$s===null?6:max(10,min(100,($s-90)/80*100)); ?>
-                <div class="bar <?= $ok?'ok':'no' ?>" style="height:<?= round($h) ?>%" data-tip="<?= e(fmt_date($d['date']).' · '.num($s).'/'.num($dd)) ?>"></div>
-              <?php endforeach; ?>
-            </div>
-            <div class="d-flex gap-3 mt-2 x-sm text-secondary">
-              <span><span class="ll-dot" style="background:#57b894"></span> คุมได้</span>
-              <span><span class="ll-dot" style="background:#cbd5e1"></span> เกินเป้า</span>
-            </div>
-          </div>
+    <!-- สัดส่วนระดับความดัน (progress) -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="soft-card h-100">
+        <div class="card-mini-head"><span><i class="bi bi-list-check"></i> สัดส่วนระดับความดัน</span><span class="text-secondary small"><?= $total ?> วัน</span></div>
+        <?php foreach ([0,1,2,3] as $lv): $cnt=$levelCount[$lv]+($lv===3?$levelCount[4]:0); $pct=$total?round($cnt/$total*100,1):0; ?>
+        <div class="res-row">
+          <div class="res-top"><span class="res-name"><span class="ll-dot" style="background:<?= $lvlMeta[$lv][1] ?>"></span> <?= $lvlMeta[$lv][0] ?><?= $lv===3?'+':'' ?></span><span class="res-val"><?= $pct ?>% <b><?= $cnt ?></b></span></div>
+          <div class="res-bar"><span style="width:<?= $pct ?>%;background:<?= $lvlMeta[$lv][1] ?>"></span></div>
         </div>
+        <?php endforeach; ?>
+      </div>
+    </div>
 
-        <!-- แนวโน้ม -->
-        <div class="col-12 widget" data-widget="trend">
-          <div class="soft-card">
-            <div class="card-mini-head"><span>แนวโน้มค่าเฉลี่ยรายวัน (14 วันล่าสุด)</span><span class="chip-soft"><?= e($avgS) ?>/<?= e($avgD) ?> เฉลี่ยรวม</span></div>
-            <?php
-              $pts=[]; foreach($last14 as $d) if($d['avg']['sys']!==null) $pts[]=['date'=>$d['date'],'sys'=>$d['avg']['sys'],'dia'=>$d['avg']['dia']];
-              if($pts){
-                $LW=960;$LH=240;$lL=38;$lR=14;$lT=16;$lB=34;$lpw=$LW-$lL-$lR;$lph=$LH-$lT-$lB;$ymin=60;$ymax=175;
-                $lx=fn($i)=>$lL+(count($pts)<=1?$lpw/2:$i/(count($pts)-1)*$lpw);
-                $ly=fn($v)=>$lT+($ymax-max($ymin,min($ymax,$v)))/($ymax-$ymin)*$lph;
-                $mk=function($key)use($pts,$lx,$ly){$d='';foreach($pts as $i=>$p)$d.=($i?'L':'M').sprintf('%.1f %.1f ',$lx($i),$ly($p[$key]));return trim($d);};
-                $areaD='M '.sprintf('%.1f %.1f',$lx(0),$ly($pts[0]['sys']));foreach($pts as $i=>$p)$areaD.=' L '.sprintf('%.1f %.1f',$lx($i),$ly($p['sys']));
-                $areaD.=sprintf(' L %.1f %.1f L %.1f %.1f Z',$lx(count($pts)-1),$lT+$lph,$lx(0),$lT+$lph);
-                echo '<div class="chart-box"><svg viewBox="0 0 '.$LW.' '.$LH.'" class="line-svg" style="aspect-ratio:'.$LW.'/'.$LH.'">';
-                echo '<defs><linearGradient id="gS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#57b894" stop-opacity=".28"/><stop offset="1" stop-color="#57b894" stop-opacity="0"/></linearGradient></defs>';
-                foreach([80,120,135,160] as $g){$yy=$ly($g);echo '<line x1="'.$lL.'" y1="'.$yy.'" x2="'.($lL+$lpw).'" y2="'.$yy.'" stroke="var(--bs-border-color)" stroke-width="1" stroke-dasharray="3 4"/><text x="'.($lL-6).'" y="'.($yy+4).'" text-anchor="end" class="axl">'.$g.'</text>';}
-                echo '<path d="'.$areaD.'" fill="url(#gS)"/>';
-                echo '<path d="'.$mk('dia').'" fill="none" stroke="#2c5c7a" stroke-width="2.5" stroke-linejoin="round"/>';
-                echo '<path d="'.$mk('sys').'" fill="none" stroke="#57b894" stroke-width="3" stroke-linejoin="round"/>';
-                foreach($pts as $i=>$p)echo '<circle class="tip-pt" cx="'.sprintf('%.1f',$lx($i)).'" cy="'.sprintf('%.1f',$ly($p['sys'])).'" r="4" fill="#fff" stroke="#57b894" stroke-width="2" data-tip="'.htmlspecialchars(fmt_date($p['date']).' · บน '.$p['sys'].'/'.$p['dia'],ENT_QUOTES).'"/>';
-                $n=count($pts);foreach($pts as $i=>$p){if($n>1&&$i%max(1,intval($n/7))!==0&&$i!==$n-1)continue;echo '<text x="'.sprintf('%.1f',$lx($i)).'" y="'.($lT+$lph+22).'" text-anchor="middle" class="axl">'.date('j/n',strtotime($p['date'])).'</text>';}
-                echo '</svg></div>';
-              } else echo '<p class="text-center text-secondary py-4">ยังไม่มีข้อมูล</p>';
-            ?>
-            <div class="d-flex gap-3 mt-1 x-sm text-secondary"><span><span class="ll-dot" style="background:#57b894"></span> ความดันบน</span><span><span class="ll-dot" style="background:#2c5c7a"></span> ความดันล่าง</span></div>
+    <!-- ช่วงการรักษา (vacancies-style) -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="soft-card h-100">
+        <div class="card-mini-head"><span><i class="bi bi-signpost-split"></i> ช่วงการรักษา</span><a href="phases.php" class="mini-more"><i class="bi bi-chevron-right"></i></a></div>
+        <?php
+          $phaseAvg = [];
+          foreach ($days as $d) { $ph = phase_for_date($phases, $d['date']); if ($ph && $d['avg']['sys'] !== null) $phaseAvg[$ph['id']][] = $d['avg']['sys']; }
+          if ($phases): ?>
+          <div class="vac-grid">
+            <?php foreach ($phases as $p): $av = !empty($phaseAvg[$p['id']]) ? round(array_sum($phaseAvg[$p['id']])/count($phaseAvg[$p['id']])) : null; ?>
+            <div class="vac-item" style="--pc:<?= e($p['color']) ?>">
+              <div class="vac-name"><?= e($p['name']) ?></div>
+              <div class="vac-meta"><i class="bi bi-calendar3"></i> <?= fmt_date($p['start_date']) ?><?= $av!==null?' · เฉลี่ยบน '.$av:'' ?></div>
+            </div>
+            <?php endforeach; ?>
+          </div>
+        <?php else: ?>
+          <p class="text-secondary small py-3 mb-0"><a href="phases.php">เพิ่มช่วงการรักษา</a> เพื่อเปรียบเทียบก่อน/หลังกินยา</p>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- Bar: การวัดตามช่วง -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="soft-card h-100">
+        <div class="card-mini-head"><span><i class="bi bi-bar-chart"></i> การวัดตามช่วง</span><span class="text-secondary small"><?= count($readings) ?> ครั้ง</span></div>
+        <?php $pmax = max(1, max($periodCount)); ?>
+        <div class="dept-bars">
+          <?php foreach (periods() as $code => $m): $c=$periodCount[$code]; $h=round($c/$pmax*100); $isMax=($c===max($periodCount)&&$c>0); ?>
+          <div class="dept-col" data-tip="<?= e($m[0].' · '.$c.' ครั้ง') ?>">
+            <div class="dept-num"><?= $c ?></div>
+            <div class="dept-bar <?= $isMax?'peak':'' ?>" style="height:<?= max(6,$h) ?>%"></div>
+            <div class="dept-lbl"><?= e(mb_substr($m[0],4)) ?: e($m[0]) ?></div>
+          </div>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    </div>
+
+    <!-- ปฏิทิน (schedules) -->
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="soft-card h-100">
+        <div class="card-mini-head"><span><i class="bi bi-calendar3"></i> ปฏิทินการวัด</span><span class="chip-soft"><?= $monthsTH[$calM-1] ?> <?= $calY ?></span></div>
+        <div class="mini-cal">
+          <div class="mc-dow"><?php foreach (['อา','จ','อ','พ','พฤ','ศ','ส'] as $d): ?><span><?= $d ?></span><?php endforeach; ?></div>
+          <div class="mc-grid">
+            <?php for ($i=0;$i<$firstDow;$i++) echo '<span class="mc-empty"></span>'; ?>
+            <?php for ($day=1;$day<=$daysInMonth;$day++):
+              $ds=sprintf('%04d-%02d-%02d',$calY,$calM,$day); $lv=$dateLevel[$ds]??null; ?>
+              <span class="mc-day <?= $lv!==null?'has':'' ?> <?= $day===$latestDay?'today':'' ?>" <?= $lv!==null?'style="--dc:'.$lvlMeta[$lv][1].'"':'' ?> data-tip="<?= e(date('j/n/Y',strtotime($ds)).($lv!==null?' · '.$lvlMeta[$lv][0]:' · ไม่มีข้อมูล')) ?>"><?= $day ?></span>
+            <?php endfor; ?>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- คอลัมน์ขวา -->
-    <div class="col-12 col-xxl-3">
-      <div class="widget" data-widget="recent">
-      <div class="soft-card mb-3">
-        <div class="text-secondary small mb-1">การวัดล่าสุด</div><h5 class="mb-3">รายการบันทึก</h5>
-        <div class="recent-list">
-          <?php foreach (array_slice($daysDesc,0,6) as $d): $bp=$d['bp'];
-            $statusMap=[0=>['ปกติ','ok'],1=>['เฝ้าระวัง','warn'],2=>['ระยะที่ 1','warn'],3=>['ระยะที่ 2','bad'],4=>['วิกฤต','bad']];
-            $st=$statusMap[$bp['level']]??['-','muted']; ?>
-          <div class="recent-row">
-            <span class="ava <?= e($bp['class']) ?>"><i class="bi bi-droplet-half"></i></span>
-            <div class="flex-grow-1"><div class="rr-name"><?= num($d['avg']['sys']) ?>/<?= num($d['avg']['dia']) ?> <span class="rr-unit">mmHg</span></div><div class="rr-sub"><?= fmt_date($d['date']) ?> · <?= count($d['readings']) ?> ครั้ง</div></div>
-            <span class="status-badge s-<?= $st[1] ?>"><?= $st[0] ?></span>
+    <!-- ตารางการวัดล่าสุด + แท็บ -->
+    <div class="col-12 col-xl-8">
+      <div class="soft-card h-100">
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+          <h5 class="mb-0"><i class="bi bi-clipboard2-pulse"></i> การวัดล่าสุด</h5>
+          <div class="rec-tabs">
+            <button class="rec-tab active" onclick="recFilter('all',this)">ทั้งหมด</button>
+            <?php foreach (periods() as $code=>$m): ?><button class="rec-tab" onclick="recFilter('<?= $code ?>',this)"><?= e($m[0]) ?></button><?php endforeach; ?>
           </div>
-          <?php endforeach; ?>
-          <?php if(!$daysDesc): ?><p class="text-secondary small">ยังไม่มีข้อมูล</p><?php endif; ?>
+        </div>
+        <div class="table-responsive">
+          <table class="table rec-table align-middle mb-0">
+            <thead><tr class="text-secondary small"><th class="ps-2">วันที่</th><th>ช่วง</th><th>บน/ล่าง</th><th>ชีพจร</th><th>แปลผล</th></tr></thead>
+            <tbody>
+              <?php if (!$recent): ?><tr><td colspan="5" class="text-center text-secondary py-4">ยังไม่มีข้อมูล</td></tr>
+              <?php else: foreach ($recent as $x): $r=$x['r']; ?>
+              <tr data-period="<?= e($r['period']) ?>">
+                <td class="ps-2 text-nowrap fw-500"><?= fmt_date($x['date']) ?></td>
+                <td><span class="period-badge p-<?= e($r['period']) ?>"><i class="bi <?= period_icon($r['period']) ?>"></i> <?= period_label($r['period']) ?> <?= $r['seq'] ?></span></td>
+                <td class="fw-bold"><?= $r['sys']!==null?(int)$r['sys']:'-' ?>/<?= $r['dia']!==null?(int)$r['dia']:'-' ?></td>
+                <td class="text-secondary"><?= $r['hr']!==null?(int)$r['hr']:'-' ?></td>
+                <td><span class="badge-result <?= e($x['bp']['class']) ?>"><?= e($x['bp']['label']) ?></span></td>
+              </tr>
+              <?php endforeach; endif; ?>
+            </tbody>
+          </table>
         </div>
       </div>
-      </div>
-      <div class="widget" data-widget="summary">
-      <div class="navy-card">
-        <div class="text-white-50 small mb-1"><i class="bi bi-clipboard2-pulse"></i> สรุปค่าเฉลี่ยรวม</div>
-        <div class="nc-row green"><span>ความดันบน</span><b><?= e($avgS) ?></b></div>
-        <div class="nc-row"><span>ความดันล่าง</span><b><?= e($avgD) ?></b></div>
-        <div class="nc-row"><span>ชีพจร</span><b><?= e($avgH) ?></b></div>
-        <div class="nc-level">ระดับโดยรวม <span class="badge-result <?= e($overall['class']) ?>"><?= e($overall['label']) ?></span></div>
-        <div class="nc-big"><div class="text-white-50 small">ค่าเฉลี่ยความดัน</div><div class="nc-bp"><?= e($avgS) ?>/<?= e($avgD) ?></div></div>
-      </div>
-      </div>
-      <!-- เกณฑ์ ACC/AHA -->
-      <div class="widget" data-widget="ref">
-      <div class="soft-card acc-ref mt-3 h-100">
-        <div class="acc-title"><i class="bi bi-clipboard2-heart"></i> เกณฑ์การแปลผล <span>ACC/AHA</span></div>
-        <table class="acc-table">
-          <thead><tr><th>ระดับ</th><th>บน</th><th>ล่าง</th></tr></thead>
-          <tbody>
-          <tr><td><span class="acc-dot" style="background:#16a34a"></span> ปกติ</td><td>&lt;120</td><td>&lt;80</td></tr>
-          <tr><td><span class="acc-dot" style="background:#65a30d"></span> สูงเล็กน้อย</td><td>120–129</td><td>&lt;80</td></tr>
-          <tr><td><span class="acc-dot" style="background:#d99a1a"></span> ระยะที่ 1</td><td>130–139</td><td>80–89</td></tr>
-          <tr><td><span class="acc-dot" style="background:#d1603a"></span> ระยะที่ 2</td><td>≥140</td><td>≥90</td></tr>
-          <tr><td><span class="acc-dot" style="background:#b91c1c"></span> วิกฤต</td><td>≥180</td><td>≥120</td></tr>
-          </tbody>
-        </table>
-        <div class="acc-note"><i class="bi bi-info-circle"></i> หน่วย mmHg · เข้าเกณฑ์เมื่อค่าใดค่าหนึ่งถึงระดับ</div>
-      </div>
+    </div>
+
+    <!-- Timeline บันทึกล่าสุด -->
+    <div class="col-12 col-xl-4">
+      <div class="soft-card h-100">
+        <div class="card-mini-head"><span><i class="bi bi-clock-history"></i> ไทม์ไลน์ล่าสุด</span></div>
+        <div class="tl">
+          <?php foreach (array_slice($recent,0,5) as $x): $r=$x['r']; ?>
+          <div class="tl-item">
+            <span class="tl-dot" style="background:<?= $lvlMeta[$x['bp']['level']>=0?$x['bp']['level']:0][1] ?>"></span>
+            <div class="tl-card">
+              <div class="tl-top"><b><?= $r['sys']!==null?(int)$r['sys']:'-' ?>/<?= $r['dia']!==null?(int)$r['dia']:'-' ?></b> mmHg</div>
+              <div class="tl-sub"><?= period_label($r['period']) ?> · <?= fmt_date($x['date']) ?></div>
+              <span class="badge-result <?= e($x['bp']['class']) ?> mt-1"><?= e($x['bp']['label']) ?></span>
+            </div>
+          </div>
+          <?php endforeach; ?>
+          <?php if (!$recent): ?><p class="text-secondary small">ยังไม่มีข้อมูล</p><?php endif; ?>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Offcanvas ตั้งค่าแดชบอร์ด -->
+<!-- Offcanvas เป้าหมาย -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="settingsPanel">
-  <div class="offcanvas-header"><h5 class="offcanvas-title"><i class="bi bi-sliders"></i> ปรับแดชบอร์ด</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
+  <div class="offcanvas-header"><h5 class="offcanvas-title"><i class="bi bi-bullseye"></i> เป้าหมายความดัน</h5><button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button></div>
   <div class="offcanvas-body">
-    <h6 class="text-secondary"><i class="bi bi-bullseye"></i> เป้าหมายความดัน (คุมได้เมื่อต่ำกว่า)</h6>
-    <form method="post" action="save.php" class="mb-4">
-      <input type="hidden" name="action" value="save_settings">
-      <input type="hidden" name="back" value="dashboard.php">
+    <form method="post" action="save.php">
+      <input type="hidden" name="action" value="save_settings"><input type="hidden" name="back" value="dashboard.php">
       <div class="row g-2 align-items-end">
         <div class="col"><label class="form-label x-sm">บน (systolic)</label><input type="number" name="target_sys" class="form-control" value="<?= $tSys ?>" min="90" max="200"></div>
         <div class="col-auto pb-2">/</div>
@@ -269,17 +276,6 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
       <div class="form-text mb-2">ค่ามาตรฐานที่บ้าน 135/85 · ที่คลินิก 140/90</div>
       <button class="btn btn-primary btn-sm w-100"><i class="bi bi-save"></i> บันทึกเป้าหมาย</button>
     </form>
-    <hr>
-    <h6 class="text-secondary"><i class="bi bi-grid-1x2"></i> แสดง/ซ่อน widget</h6>
-    <div id="widgetToggles" class="widget-toggles">
-      <?php foreach ([
-        'latest'=>'ค่าล่าสุด','pixel'=>'ปฏิทิน Pixel','gauge'=>'สรุประดับความดัน',
-        'control'=>'คุมได้ vs เกินเป้า','trend'=>'กราฟแนวโน้ม','recent'=>'รายการล่าสุด','summary'=>'สรุปค่าเฉลี่ย','ref'=>'เกณฑ์ ACC/AHA'] as $wid=>$lbl): ?>
-        <label class="wt-row"><span><?= $lbl ?></span>
-          <input type="checkbox" class="form-check-input" data-widget-toggle="<?= $wid ?>" checked></label>
-      <?php endforeach; ?>
-    </div>
-    <p class="form-text mt-2">การตั้งค่าการแสดงผลถูกเก็บไว้ในเบราว์เซอร์นี้</p>
   </div>
 </div>
 

@@ -161,6 +161,15 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('scroll', () => { if (tip) tip.classList.remove('show'); }, { passive: true });
 })();
 
+// ===== แดชบอร์ด: กรองตารางการวัดล่าสุดตามช่วง =====
+function recFilter(period, el) {
+  document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.rec-table tbody tr[data-period]').forEach(tr => {
+    tr.style.display = (period === 'all' || tr.dataset.period === period) ? '' : 'none';
+  });
+}
+
 // ===== Pixel chart: สลับปี =====
 function showYear(y, el) {
   document.querySelectorAll('.year-chip').forEach(c => c.classList.remove('active'));
