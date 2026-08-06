@@ -212,6 +212,35 @@ function editCheckup(c) {
   new bootstrap.Modal(document.getElementById('checkupModal')).show();
 }
 
+// ===== บันทึกค่าสุขภาพรายครั้ง (quick log) =====
+function quickLog(code) {
+  const m = (window.HEALTH_METRICS || {})[code];
+  document.getElementById('l-id').value = '';
+  document.getElementById('l-metric').value = code;
+  document.getElementById('l-val').value = '';
+  document.getElementById('l-note').value = '';
+  if (m) {
+    document.getElementById('l-title').textContent = m[0];
+    document.getElementById('l-unit').textContent = m[1];
+    document.getElementById('l-ic').innerHTML = '<i class="bi ' + m[2] + '"></i>';
+    document.getElementById('l-ic').style.color = m[3];
+    let ref = '';
+    if (m[4] !== null && m[5] !== null) ref = 'เกณฑ์แนะนำ ' + m[4] + '–' + m[5] + ' ' + m[1];
+    else if (m[4] !== null) ref = 'เกณฑ์แนะนำ ≥ ' + m[4] + ' ' + m[1];
+    else if (m[5] !== null) ref = 'เกณฑ์แนะนำ ≤ ' + m[5] + ' ' + m[1];
+    document.getElementById('l-ref').textContent = ref;
+  }
+  setTimeout(() => document.getElementById('l-val').focus(), 300);
+}
+function editHealth(l) {
+  quickLog(l.metric);
+  document.getElementById('l-id').value = l.id || '';
+  document.getElementById('l-val').value = l.val;
+  document.getElementById('l-date').value = l.log_date || l.date || '';
+  document.getElementById('l-note').value = l.note || '';
+  new bootstrap.Modal(document.getElementById('logModal')).show();
+}
+
 // ===== ค้นหาในตาราง =====
 document.addEventListener('DOMContentLoaded', () => {
   const search = document.getElementById('tableSearch');

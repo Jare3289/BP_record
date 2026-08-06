@@ -49,11 +49,38 @@ if ($action === 'delete_phase') {
     exit;
 }
 
+/** ---------- บันทึกค่าสุขภาพรายครั้ง ---------- */
+if ($action === 'save_health') {
+    $hid    = (int) ($_POST['id'] ?? 0);
+    $metric = $_POST['metric'] ?? '';
+    $date   = trim($_POST['log_date'] ?? '');
+    $val    = $_POST['val'] ?? '';
+    if (!array_key_exists($metric, health_metrics()) || $date === '' || !strtotime($date) || $val === '' || !is_numeric($val)) {
+        header('Location: health.php?msg=error'); exit;
+    }
+    $date = date('Y-m-d', strtotime($date));
+    $val  = (float) $val;
+    $note = trim($_POST['note'] ?? '') ?: null;
+    try {
+        if ($hid > 0) {
+            db()->prepare('UPDATE health_logs SET log_date=?, metric=?, val=?, note=? WHERE id=?')->execute([$date, $metric, $val, $note, $hid]);
+        } else {
+            db()->prepare('INSERT INTO health_logs (log_date, metric, val, note) VALUES (?,?,?,?)')->execute([$date, $metric, $val, $note]);
+        }
+    } catch (Throwable $e) { header('Location: health.php?msg=error'); exit; }
+    header('Location: health.php?msg=saved'); exit;
+}
+if ($action === 'delete_health') {
+    $hid = (int) ($_POST['id'] ?? 0);
+    if ($hid > 0) db()->prepare('DELETE FROM health_logs WHERE id=?')->execute([$hid]);
+    header('Location: health.php?msg=deleted'); exit;
+}
+
 /** ---------- ประวัติการตรวจสุขภาพ ---------- */
 if ($action === 'save_checkup') {
     $cid  = (int) ($_POST['id'] ?? 0);
     $date = trim($_POST['checkup_date'] ?? '');
-    if ($date === '' || !strtotime($date)) { header('Location: checkups.php?msg=error'); exit; }
+    if ($date === '' || !strtotime($date)) { header('Location: health.php?msg=error'); exit; }
     $date = date('Y-m-d', strtotime($date));
 
     $numN = fn($k) => (($v = $_POST[$k] ?? '') === '' || !is_numeric($v)) ? null : $v;
@@ -94,9 +121,9 @@ if ($action === 'save_checkup') {
             }
         }
     } catch (Throwable $e) {
-        header('Location: checkups.php?msg=error'); exit;
+        header('Location: health.php?msg=error'); exit;
     }
-    header('Location: checkups.php?msg=saved&open=' . $cid);
+    header('Location: health.php?msg=saved&open=' . $cid);
     exit;
 }
 if ($action === 'delete_checkup') {
@@ -105,7 +132,7 @@ if ($action === 'delete_checkup') {
         try { db()->prepare('DELETE FROM checkup_values WHERE checkup_id = ?')->execute([$cid]); } catch (Throwable $e) {}
         db()->prepare('DELETE FROM checkups WHERE id = ?')->execute([$cid]);
     }
-    header('Location: checkups.php?msg=deleted'); exit;
+    header('Location: health.php?msg=deleted'); exit;
 }
 
 /** ---------- การตั้งค่า (เป้าหมายความดัน) ---------- */

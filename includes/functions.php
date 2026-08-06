@@ -331,6 +331,98 @@ function checkup_flag(array $test, $val): string
     return 'ok';
 }
 
+/**
+ * แคตตาล็อกค่าสุขภาพที่บันทึกได้รายครั้ง
+ * code => [ชื่อ, หน่วย, ไอคอน, สี, target_low, target_high, step]
+ */
+function health_metrics(): array
+{
+    return [
+        'glucose'  => ['น้ำตาลปลายนิ้ว', 'mg/dl', 'bi-droplet-half', '#dc3545', 70, 140, '1'],
+        'weight'   => ['น้ำหนัก', 'กก.', 'bi-speedometer2', '#0d9488', null, null, '0.1'],
+        'waist'    => ['รอบเอว', 'ซม.', 'bi-rulers', '#65a30d', null, 90, '0.5'],
+        'sleep'    => ['การนอน', 'ชม.', 'bi-moon-stars-fill', '#6d4bb0', 7, 9, '0.5'],
+        'steps'    => ['ก้าวเดิน', 'ก้าว', 'bi-person-walking', '#2c5c7a', 6000, null, '100'],
+        'water'    => ['น้ำดื่ม', 'แก้ว', 'bi-cup-straw', '#0dcaf0', 8, null, '1'],
+        'exercise' => ['ออกกำลังกาย', 'นาที', 'bi-heart-pulse-fill', '#16a34a', 30, null, '5'],
+        'spo2'     => ['ออกซิเจนปลายนิ้ว', '%', 'bi-lungs-fill', '#0d6efd', 95, 100, '1'],
+        'temp'     => ['อุณหภูมิ', '°C', 'bi-thermometer-half', '#e0699a', 36, 37.5, '0.1'],
+        'mood'     => ['อารมณ์ (1-5)', '/5', 'bi-emoji-smile-fill', '#f2a71b', 3, 5, '1'],
+    ];
+}
+
+/** โหลดบันทึกค่าสุขภาพทั้งหมด (ปลอดภัยถ้าตารางยังไม่มี) */
+function load_health_logs(?string $metric = null, int $limit = 0): array
+{
+    try {
+        if ($metric) {
+            $sql = 'SELECT * FROM health_logs WHERE metric = ? ORDER BY log_date ASC, id ASC';
+            $stmt = db()->prepare($sql); $stmt->execute([$metric]);
+            $rows = $stmt->fetchAll();
+        } else {
+            $rows = db()->query('SELECT * FROM health_logs ORDER BY log_date DESC, id DESC')->fetchAll();
+        }
+        return $limit > 0 ? array_slice($rows, 0, $limit) : $rows;
+    } catch (Throwable $e) { return []; }
+}
+
+/** ค่าล่าสุดของแต่ละ metric => [metric => ['val','date']] */
+function health_latest(): array
+{
+    $out = [];
+    try {
+        foreach (db()->query('SELECT metric, val, log_date FROM health_logs ORDER BY log_date ASC, id ASC') as $r) {
+            $out[$r['metric']] = ['val' => $r['val'], 'date' => $r['log_date']];
+        }
+    } catch (Throwable $e) {}
+    return $out;
+}
+
+/** ประเมินค่า metric เทียบ target => '', 'low', 'high', 'ok' */
+function metric_flag(array $meta, $val): string
+{
+    if ($val === null || $val === '' || !is_numeric($val)) return '';
+    $v = (float) $val; $low = $meta[4]; $high = $meta[5];
+    if ($low !== null && $v < $low) return 'low';
+    if ($high !== null && $v > $high) return 'high';
+    return 'ok';
+}
+
+/** กราฟเส้นจิ๋ว (sparkline) จากชุดตัวเลข */
+function sparkline_svg(array $values, string $color = '#57b894', int $w = 120, int $h = 34): string
+{
+    $values = array_values(array_filter($values, fn($v) => is_numeric($v)));
+    $n = count($values);
+    if ($n === 0) return '';
+    if ($n === 1) $values = [$values[0], $values[0]];
+    $n = count($values);
+    $min = min($values); $max = max($values); $range = ($max - $min) ?: 1;
+    $pad = 3;
+    $x = fn($i) => $pad + $i / ($n - 1) * ($w - 2 * $pad);
+    $y = fn($v) => $h - $pad - ($v - $min) / $range * ($h - 2 * $pad);
+    $d = ''; foreach ($values as $i => $v) $d .= ($i ? 'L' : 'M') . sprintf('%.1f %.1f ', $x($i), $y($v));
+    $area = 'M ' . sprintf('%.1f %.1f', $x(0), $y($values[0]));
+    foreach ($values as $i => $v) $area .= ' L ' . sprintf('%.1f %.1f', $x($i), $y($v));
+    $area .= sprintf(' L %.1f %.1f L %.1f %.1f Z', $x($n - 1), $h - $pad, $x(0), $h - $pad);
+    return '<svg class="spark" viewBox="0 0 ' . $w . ' ' . $h . '" preserveAspectRatio="none">'
+        . '<path d="' . $area . '" fill="' . $color . '" opacity="0.14"/>'
+        . '<path d="' . trim($d) . '" fill="none" stroke="' . $color . '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'
+        . '<circle cx="' . sprintf('%.1f', $x($n - 1)) . '" cy="' . sprintf('%.1f', $y($values[$n - 1])) . '" r="2.5" fill="' . $color . '"/></svg>';
+}
+
+/** แหล่งอ้างอิงค่าปกติ (สำหรับแสดงในหน้าตรวจสุขภาพ) */
+function reference_sources(): array
+{
+    return [
+        ['ความดันโลหิต', 'เกณฑ์ ACC/AHA 2017 (วัดที่บ้าน 135/85, คลินิก 140/90)'],
+        ['ดัชนีมวลกาย (BMI)', 'เกณฑ์เอเชีย-แปซิฟิก (WHO Asia-Pacific 2004)'],
+        ['ระดับไขมันในเลือด', 'NCEP ATP III / แนวทางราชวิทยาลัยอายุรแพทย์ฯ'],
+        ['น้ำตาล / HbA1c', 'สมาคมโรคเบาหวานแห่งประเทศไทย (ADA/สมาคมฯ)'],
+        ['ค่าห้องปฏิบัติการ (Lab)', 'ช่วงอ้างอิงตามใบรายงานผลของห้องปฏิบัติการโรงพยาบาล'],
+        ['ค่าสุขภาพทั่วไป', 'คำแนะนำทั่วไป (นอน 7-9 ชม., เดิน ≥6,000 ก้าว, ดื่มน้ำ ~8 แก้ว/วัน)'],
+    ];
+}
+
 /** โหลดการตรวจสุขภาพทั้งหมด (ปลอดภัยถ้าตารางยังไม่มี) */
 function load_checkups(): array
 {

@@ -107,3 +107,15 @@ CREATE TABLE IF NOT EXISTS `checkup_values` (
   PRIMARY KEY (`checkup_id`, `code`),
   CONSTRAINT `fk_cv_checkup` FOREIGN KEY (`checkup_id`) REFERENCES `checkups`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- บันทึกค่าสุขภาพรายครั้ง (น้ำตาล, การนอน, ก้าวเดิน ฯลฯ)
+CREATE TABLE IF NOT EXISTS `health_logs` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `log_date`   DATE NOT NULL,
+  `metric`     VARCHAR(30) NOT NULL,
+  `val`        DECIMAL(10,2) NULL,
+  `note`       VARCHAR(255) NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_metric_date` (`metric`, `log_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -58,8 +58,8 @@ if ($hasPhoto) $profile['photo'] = $photoPath;
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link <?= $ACTIVE === 'checkups' ? 'active' : '' ?>" href="checkups.php">
-            <i class="bi bi-clipboard2-pulse"></i> ตรวจสุขภาพ
+          <a class="nav-link <?= $ACTIVE === 'health' ? 'active' : '' ?>" href="health.php">
+            <i class="bi bi-heart-pulse"></i> สุขภาพ
           </a>
         </li>
       </ul>
