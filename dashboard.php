@@ -28,6 +28,9 @@ $avgH = $nH ? round($sumH/$nH) : null;
 $overall = classify_bp($avgS, $avgD);
 $daysDesc = array_reverse($days);
 $latest = $daysDesc[0] ?? null;
+// การวัดครั้งล่าสุดจริง (ครั้งท้ายสุดของวันล่าสุด)
+$lr = ($latest && !empty($latest['readings'])) ? end($latest['readings']) : null;
+$lrBp = $lr ? classify_bp($lr['sys'] !== null ? (int)$lr['sys'] : null, $lr['dia'] !== null ? (int)$lr['dia'] : null) : null;
 $pctRange = $total ? round($inRange/$total*100) : 0;
 $pctHigh  = 100 - $pctRange;
 $currentPhase = $latest ? phase_for_date($phases, $latest['date']) : null;
@@ -88,14 +91,14 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
           <div class="bp-device h-100">
             <div class="dev-top"><span class="dev-brand"><i class="bi bi-heart-pulse-fill"></i> BP MONITOR</span><span class="dev-mem">MEM · ค่าล่าสุด</span></div>
             <div class="dev-screen">
-              <?php if ($latest): ?>
-              <div class="dev-status <?= e($latest['bp']['class']) ?>"><i class="bi bi-record-circle"></i> <?= e($latest['bp']['label']) ?></div>
+              <?php if ($lr): ?>
+              <div class="dev-status <?= e($lrBp['class']) ?>"><i class="bi bi-record-circle"></i> <?= e($lrBp['label']) ?></div>
               <div class="dev-rows">
-                <div class="dev-r"><span class="dev-lbl">SYS</span><span class="dev-val"><?= num($latest['avg']['sys']) ?></span><span class="dev-u">mmHg</span></div>
-                <div class="dev-r"><span class="dev-lbl">DIA</span><span class="dev-val"><?= num($latest['avg']['dia']) ?></span><span class="dev-u">mmHg</span></div>
-                <div class="dev-r pulse"><span class="dev-lbl">PULSE</span><i class="bi bi-heart-fill beat"></i><span class="dev-val pv"><?= num($latest['avg']['hr']) ?></span><span class="dev-u">/min</span></div>
+                <div class="dev-r"><span class="dev-lbl">SYS</span><span class="dev-val"><?= $lr['sys'] !== null ? (int)$lr['sys'] : '--' ?></span><span class="dev-u">mmHg</span></div>
+                <div class="dev-r"><span class="dev-lbl">DIA</span><span class="dev-val"><?= $lr['dia'] !== null ? (int)$lr['dia'] : '--' ?></span><span class="dev-u">mmHg</span></div>
+                <div class="dev-r pulse"><span class="dev-lbl">PULSE</span><i class="bi bi-heart-fill beat"></i><span class="dev-val pv"><?= $lr['hr'] !== null ? (int)$lr['hr'] : '--' ?></span><span class="dev-u">/min</span></div>
               </div>
-              <div class="dev-foot"><i class="bi bi-calendar-check"></i> <?= fmt_date($latest['date']) ?> · <?= count($latest['readings']) ?> ครั้ง</div>
+              <div class="dev-foot"><i class="bi bi-calendar-check"></i> <?= fmt_date($latest['date']) ?> · <?= period_label($lr['period']) ?> ครั้งที่ <?= $lr['seq'] ?></div>
               <?php else: ?>
               <div class="dev-empty">-- / --<div class="dev-u mt-2">ยังไม่มีข้อมูล</div></div>
               <?php endif; ?>
