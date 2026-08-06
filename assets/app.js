@@ -161,6 +161,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('scroll', () => { if (tip) tip.classList.remove('show'); }, { passive: true });
 })();
 
+// ===== หน้าสุขภาพ: กรองตารางบันทึกตามชนิดค่า =====
+function healthTab(metric, el) {
+  document.querySelectorAll('.hl-table').forEach(() => {});
+  document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.hl-table tbody tr[data-metric]').forEach(tr => {
+    tr.style.display = (metric === 'all' || tr.dataset.metric === metric) ? '' : 'none';
+  });
+}
+
 // ===== แดชบอร์ด: กรองตารางการวัดล่าสุดตามช่วง =====
 function recFilter(period, el) {
   document.querySelectorAll('.rec-tab').forEach(t => t.classList.remove('active'));

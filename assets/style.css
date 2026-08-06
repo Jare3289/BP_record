@@ -617,6 +617,7 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 .log-row:first-child { border-top: none; }
 .log-ic { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: var(--mc); flex-shrink: 0;
   background: color-mix(in srgb, var(--mc) 14%, transparent); }
+.log-ic.sm { width: 26px; height: 26px; border-radius: 8px; font-size: 13px; display: inline-grid; vertical-align: middle; margin-right: 6px; }
 .log-name { font-size: .88rem; } .log-name b { font-size: 1rem; } .log-name .log-u { font-size: .72rem; color: var(--bs-secondary-color); }
 .log-name .f-high { color: #dc2626; } .log-name .f-low { color: #d97706; }
 .log-date { font-size: .72rem; color: var(--bs-secondary-color); }
