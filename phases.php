@@ -4,13 +4,32 @@ require __DIR__ . '/includes/functions.php';
 
 $phases = load_phases();
 
-// นับจำนวนวันในแต่ละช่วง
-$rows = db()->query('SELECT record_date FROM bp_readings')->fetchAll(PDO::FETCH_COLUMN);
+// นับจำนวนวันที่บันทึกในแต่ละช่วง (จากตาราง readings)
+try { $rows = db()->query('SELECT DISTINCT record_date FROM readings')->fetchAll(PDO::FETCH_COLUMN); }
+catch (Throwable $e) { $rows = []; }
 $countByPhase = [];
 foreach ($rows as $d) {
     $ph = phase_for_date($phases, $d);
     if ($ph) $countByPhase[$ph['id']] = ($countByPhase[$ph['id']] ?? 0) + 1;
 }
+
+// คำนวณวันสิ้นสุดของแต่ละช่วง (ช่วงถัดไปเริ่มเมื่อไร) — ช่วงล่าสุดถึงวันปัจจุบัน
+$today = date('Y-m-d');
+$phaseEnd = []; $phaseIsCurrent = [];
+$np = count($phases);
+foreach ($phases as $i => $p) {
+    if ($i < $np - 1) {
+        $phaseEnd[$p['id']] = date('Y-m-d', strtotime($phases[$i+1]['start_date'] . ' -1 day'));
+        $phaseIsCurrent[$p['id']] = false;
+    } else {
+        $phaseEnd[$p['id']] = ($today >= $p['start_date']) ? $today : $p['start_date'];
+        $phaseIsCurrent[$p['id']] = true;
+    }
+}
+$durDays = function ($start, $end) {
+    $n = (int) floor((strtotime($end) - strtotime($start)) / 86400) + 1;
+    return $n > 0 ? $n : 0;
+};
 
 $palette = ['#57b894', '#2c5c7a', '#d99a1a', '#d1603a', '#7c5cbf', '#0d9488', '#e0699a', '#4d7c0f'];
 
@@ -46,18 +65,26 @@ require __DIR__ . '/includes/header.php';
     <div class="table-responsive">
       <table class="table table-hover align-middle mb-0">
         <thead><tr class="text-secondary small">
-          <th class="ps-3">ช่วง</th><th>วันเริ่ม</th><th>จำนวนวันที่บันทึก</th><th>หมายเหตุ</th><th></th>
+          <th class="ps-3">ช่วง</th><th>ช่วงวันที่</th><th>ระยะเวลา</th><th>จำนวนวันที่บันทึก</th><th>หมายเหตุ</th><th></th>
         </tr></thead>
         <tbody>
         <?php if (!$phases): ?>
-          <tr><td colspan="5" class="text-center text-secondary py-5">
+          <tr><td colspan="6" class="text-center text-secondary py-5">
             <i class="bi bi-signpost fs-3 d-block mb-2"></i> ยังไม่มีช่วง — กด “เพิ่มช่วง” เพื่อเริ่มต้น<br>
             <span class="small">เช่น สร้าง “ก่อนกินยา” วันเริ่ม 17/1/2026 แล้วสร้าง “กินยาช่วงที่ 1” วันที่เริ่มกินยา</span>
           </td></tr>
         <?php else: foreach ($phases as $p): ?>
           <tr>
             <td class="ps-3"><span class="phase-tag" style="--pc:<?= e($p['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($p['name']) ?></span></td>
-            <td class="text-nowrap"><?= fmt_date($p['start_date']) ?></td>
+            <td class="text-nowrap">
+              <?= fmt_date($p['start_date']) ?> <i class="bi bi-arrow-right text-secondary small"></i>
+              <?php if ($phaseIsCurrent[$p['id']]): ?>
+                <span class="badge rounded-pill text-bg-success"><i class="bi bi-broadcast"></i> ปัจจุบัน</span>
+              <?php else: ?>
+                <?= fmt_date($phaseEnd[$p['id']]) ?>
+              <?php endif; ?>
+            </td>
+            <td class="text-nowrap text-secondary"><?= $durDays($p['start_date'], $phaseEnd[$p['id']]) ?> วัน</td>
             <td><?= $countByPhase[$p['id']] ?? 0 ?> วัน</td>
             <td class="text-secondary small"><?= e($p['note'] ?? '') ?></td>
             <td class="text-nowrap text-end pe-3">
