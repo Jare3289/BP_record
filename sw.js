@@ -1,19 +1,12 @@
 /* Service Worker สำหรับ BP Record PWA
- * - หน้า PHP (มีข้อมูลจาก DB): network-first แล้ว fallback เป็น cache เมื่อออฟไลน์
- * - ไฟล์สแตติก (css/js/รูป/ฟอนต์/CDN): cache-first เพื่อความเร็ว
+ * - หน้า PHP + ไฟล์ CSS/JS ในเว็บ: network-first (ได้ของใหม่เสมอ, ออฟไลน์ค่อยใช้ cache)
+ * - รูป/ฟอนต์/CDN: cache-first เพื่อความเร็ว
+ * บั๊มเวอร์ชันแคชทุกครั้งที่แก้ไฟล์นี้ เพื่อล้างของเก่า
  */
-const CACHE = 'bp-record-v1';
+const CACHE = 'bp-record-v3';
 const APP_SHELL = [
-  'dashboard.php',
-  'index.php',
-  'chart.php',
-  'phases.php',
-  'health.php',
-  'assets/style.css',
-  'assets/app.js',
-  'assets/icon-192.png',
-  'assets/icon-512.png',
-  'manifest.json',
+  'dashboard.php', 'index.php', 'chart.php', 'phases.php', 'health.php',
+  'assets/icon-192.png', 'assets/icon-512.png', 'manifest.json',
 ];
 
 self.addEventListener('install', (e) => {
@@ -32,13 +25,15 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET') return; // ไม่แคชการบันทึกข้อมูล (POST)
+  if (req.method !== 'GET') return; // ไม่แคช POST
 
   const url = new URL(req.url);
+  const sameOrigin = url.origin === location.origin;
   const isPage = req.mode === 'navigate' || url.pathname.endsWith('.php');
+  const isAsset = sameOrigin && /\.(css|js)$/i.test(url.pathname);
 
-  if (isPage) {
-    // network-first: ได้ข้อมูลล่าสุดเสมอ, ออฟไลน์ค่อยใช้ cache
+  if (isPage || isAsset) {
+    // network-first: ได้ของล่าสุดเสมอ (แก้ปัญหา CSS/JS ค้างของเก่า)
     e.respondWith(
       fetch(req)
         .then((res) => {
@@ -46,13 +41,13 @@ self.addEventListener('fetch', (e) => {
           caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match(req).then((m) => m || caches.match('dashboard.php')))
+        .catch(() => caches.match(req).then((m) => m || (isPage ? caches.match('dashboard.php') : undefined)))
     );
   } else {
-    // cache-first สำหรับไฟล์สแตติกและ CDN
+    // cache-first สำหรับรูป/ฟอนต์/CDN
     e.respondWith(
       caches.match(req).then((m) => m || fetch(req).then((res) => {
-        if (res.ok && (url.origin === location.origin || url.protocol === 'https:')) {
+        if (res.ok && (sameOrigin || url.protocol === 'https:')) {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
         }

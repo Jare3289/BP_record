@@ -34,7 +34,7 @@ if ($hasPhoto) $profile['photo'] = $photoPath;
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=Noto+Sans+Thai:wght@300..700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link href="assets/style.css" rel="stylesheet">
+<link href="assets/style.css?v=<?= @filemtime(__DIR__ . '/../assets/style.css') ?: '1' ?>" rel="stylesheet">
 </head>
 <body>
 <nav class="navbar navbar-expand-lg app-navbar sticky-top">
