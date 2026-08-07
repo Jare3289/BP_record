@@ -83,6 +83,23 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
     </div>
   </section>
 
+  <!-- แถบเลือกเกณฑ์แปลผล (สลับสากล/ไทย) -->
+  <?php $curStd = bp_standard(); ?>
+  <div class="std-bar mb-4">
+    <div class="std-bar-info">
+      <i class="bi bi-clipboard2-pulse-fill"></i>
+      <div>
+        <div class="std-bar-title">เกณฑ์แปลผลความดัน</div>
+        <div class="std-bar-sub">กำลังใช้: <b><?= e(bp_standard_name($curStd)) ?></b></div>
+      </div>
+    </div>
+    <form method="post" action="save.php" class="std-bar-toggle">
+      <input type="hidden" name="action" value="set_standard"><input type="hidden" name="back" value="dashboard.php">
+      <button name="bp_standard" value="intl" class="std-opt <?= $curStd==='intl'?'on':'' ?>">สากล<span>ACC/AHA</span></button>
+      <button name="bp_standard" value="th" class="std-opt <?= $curStd==='th'?'on':'' ?>">ไทย<span>สมาคมความดันฯ</span></button>
+    </form>
+  </div>
+
   <div class="row g-3">
     <div class="col-12 col-xxl-9">
       <div class="row g-3">
@@ -234,18 +251,10 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
         <div class="nc-big"><div class="text-white-50 small">ค่าเฉลี่ยความดัน</div><div class="nc-bp"><?= e($avgS) ?>/<?= e($avgD) ?></div></div>
       </div>
       </div>
-      <!-- เกณฑ์การแปลผล (สลับ สากล/ไทย ได้) -->
-      <?php $curStd = bp_standard(); ?>
+      <!-- เกณฑ์การแปลผล (สลับได้จากแถบด้านบน) -->
       <div class="widget" data-widget="ref">
       <div class="soft-card acc-ref mt-3 h-100">
         <div class="acc-title"><i class="bi bi-clipboard2-heart"></i> เกณฑ์ความดัน <span><?= e(bp_standard_name($curStd)) ?></span></div>
-        <div class="std-toggle">
-          <form method="post" action="save.php" class="d-contents">
-            <input type="hidden" name="action" value="set_standard"><input type="hidden" name="back" value="dashboard.php">
-            <button name="bp_standard" value="intl" class="std-opt <?= $curStd==='intl'?'on':'' ?>">สากล</button>
-            <button name="bp_standard" value="th" class="std-opt <?= $curStd==='th'?'on':'' ?>">ไทย</button>
-          </form>
-        </div>
         <table class="acc-table">
           <thead><tr><th>ระดับ</th><th>บน</th><th>ล่าง</th></tr></thead>
           <tbody>

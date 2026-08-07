@@ -145,7 +145,7 @@ body { background: var(--bs-body-bg); }
 
 /* ---- กราฟ ---- */
 .chart-box { width: 100%; overflow-x: auto; text-align: center; }
-.bp-chart { width: 100%; max-width: 500px; height: auto; display: block; margin: 0 auto; }
+.bp-chart { width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; }
 .bp-chart .axl { font-size: 12px; fill: var(--bs-secondary-color); }
 .bp-chart .axttl { font-size: 12px; fill: var(--bs-body-color); font-weight: 700; }
 .bp-chart circle { cursor: pointer; transition: r .1s; }
@@ -777,3 +777,43 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 .std-opt { border: 0; background: transparent; color: var(--bs-secondary-color); font-size: .8rem; font-weight: 600;
   padding: 4px 14px; border-radius: 999px; cursor: pointer; transition: all .15s; }
 .std-opt.on { background: var(--brand); color: #fff; box-shadow: 0 1px 4px rgba(13,148,136,.35); }
+
+/* ---- log modal: เลือกค่าที่บันทึก (ปุ่มชัดเจน) ---- */
+.text-teal { color: var(--brand); }
+.log-metric-choose { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.lmc-btn { flex: 1 1 0; min-width: 92px; max-width: 140px; border: 1.5px solid var(--bs-border-color); background: var(--bs-body-bg);
+  border-radius: 14px; padding: 12px 8px; cursor: pointer; transition: all .15s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lmc-btn .lmc-ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 20px;
+  background: color-mix(in srgb, var(--mc) 14%, transparent); color: var(--mc); transition: all .15s; }
+.lmc-btn .lmc-name { font-size: .84rem; font-weight: 600; color: var(--bs-secondary-color); }
+.lmc-btn:hover { border-color: var(--mc); }
+.lmc-btn.active { border-color: var(--mc); background: color-mix(in srgb, var(--mc) 8%, transparent); box-shadow: 0 3px 12px color-mix(in srgb, var(--mc) 22%, transparent); }
+.lmc-btn.active .lmc-ic { background: var(--mc); color: #fff; }
+.lmc-btn.active .lmc-name { color: var(--bs-body-color); }
+
+/* ---- ฟอร์มผลตรวจแบบ medical record ---- */
+.lab-form-head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 8px;
+  border-bottom: 2px solid var(--brand); margin-bottom: 6px; font-weight: 700; color: var(--brand); font-size: .95rem; }
+.lab-form-head .text-secondary { font-size: .78rem; font-weight: 500; }
+.lab-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 0 26px; }
+@media (max-width: 767.98px) { .lab-form-grid { grid-template-columns: 1fr; } }
+.lab-form-row { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px dashed var(--bs-border-color); }
+.lfr-name { flex: 1 1 auto; font-size: .9rem; font-weight: 500; line-height: 1.25; min-width: 0; }
+.lfr-ref { display: block; font-size: .7rem; color: var(--bs-secondary-color); font-weight: 400; margin-top: 1px; }
+.lfr-field { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; width: 150px; }
+.lfr-field .form-control, .lfr-field .form-select { text-align: center; }
+.lfr-unit { font-size: .74rem; color: var(--bs-secondary-color); white-space: nowrap; min-width: 34px; }
+
+/* ---- แถบเลือกเกณฑ์แปลผล (บนสุดแดชบอร์ด) ---- */
+.std-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+  background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 16px; padding: 14px 18px; box-shadow: var(--card-shadow, 0 2px 10px rgba(0,0,0,.04)); }
+.std-bar-info { display: flex; align-items: center; gap: 12px; }
+.std-bar-info > .bi { font-size: 26px; color: var(--brand); }
+.std-bar-title { font-weight: 700; font-size: 1rem; }
+.std-bar-sub { font-size: .82rem; color: var(--bs-secondary-color); }
+.std-bar-toggle { display: inline-flex; background: var(--bs-tertiary-bg); border-radius: 999px; padding: 4px; gap: 3px; }
+.std-bar-toggle .std-opt { display: flex; flex-direction: column; align-items: center; line-height: 1.15;
+  border: 0; background: transparent; color: var(--bs-secondary-color); font-size: .92rem; font-weight: 700;
+  padding: 7px 20px; border-radius: 999px; cursor: pointer; transition: all .15s; }
+.std-bar-toggle .std-opt span { font-size: .64rem; font-weight: 500; opacity: .8; }
+.std-bar-toggle .std-opt.on { background: var(--brand); color: #fff; box-shadow: 0 2px 8px rgba(13,148,136,.4); }

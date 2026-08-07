@@ -287,23 +287,9 @@ require __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- เลือกบันทึกค่าร่างกายแบบเร็ว -->
-  <div class="card app-card mb-4">
-    <div class="card-header"><i class="bi bi-lightning-charge-fill"></i> บันทึกร่างกายวันนี้ — เลือกแล้วใส่ค่าได้เลย</div>
-    <div class="card-body">
-      <div class="metric-picker">
-        <?php foreach ($metrics as $code => $m): ?>
-        <button class="metric-pick" style="--mc:<?= e($m[3]) ?>" data-bs-toggle="modal" data-bs-target="#logModal" onclick="quickLog('<?= $code ?>')">
-          <span class="mp-icon"><i class="bi <?= $m[2] ?>"></i></span><span class="mp-name"><?= e($m[0]) ?></span>
-        </button>
-        <?php endforeach; ?>
-      </div>
-    </div>
-  </div>
-
   <!-- ===== ประวัติผลตรวจสุขภาพ ===== -->
   <div class="row g-4">
-    <div class="col-12 col-lg-8">
+    <div class="col-12">
       <h5 class="mb-3"><i class="bi bi-clipboard2-data"></i> ประวัติผลตรวจสุขภาพทั้งหมด</h5>
       <?php if ($checkups): ?>
       <div class="accordion checkup-acc" id="checkupAcc">
@@ -339,17 +325,6 @@ require __DIR__ . '/includes/header.php';
       <div class="card app-card"><div class="card-body text-center text-secondary py-4"><i class="bi bi-clipboard2-heart fs-3 d-block mb-2"></i> ยังไม่มีผลตรวจ — กด “เพิ่มผลตรวจ”</div></div>
       <?php endif; ?>
     </div>
-
-    <!-- อ้างอิง -->
-    <div class="col-12 col-lg-4">
-      <div class="card app-card ref-card">
-        <div class="card-header"><i class="bi bi-journal-medical"></i> แหล่งอ้างอิงค่าปกติ</div>
-        <div class="card-body">
-          <?php foreach (reference_sources() as $rs): ?><div class="ref-item"><div class="ref-topic"><i class="bi bi-bookmark-check-fill"></i> <?= e($rs[0]) ?></div><div class="ref-src"><?= e($rs[1]) ?></div></div><?php endforeach; ?>
-          <div class="ref-foot"><i class="bi bi-info-circle"></i> ค่าอ้างอิงในผลตรวจแต่ละใบยึดตามช่วงอ้างอิงของห้องปฏิบัติการที่ตรวจเป็นหลัก · ข้อมูลนี้เพื่อการติดตามเบื้องต้น ไม่ทดแทนคำวินิจฉัยของแพทย์</div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -359,13 +334,17 @@ require __DIR__ . '/includes/header.php';
     <div class="modal-content">
       <form method="post" action="save.php" id="logForm">
         <input type="hidden" name="action" value="save_health"><input type="hidden" name="id" id="l-id" value=""><input type="hidden" name="metric" id="l-metric" value="weight">
-        <div class="modal-header border-0 pb-0"><h5 class="modal-title"><span id="l-ic" class="log-modal-ic"><i class="bi bi-speedometer2"></i></span> <span id="l-title">บันทึกค่า</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body text-center">
-          <div class="mb-3 text-start"><label class="form-label x-sm text-secondary mb-1">เลือกค่าที่จะบันทึก</label>
-            <select id="l-metric-sel" class="form-select" onchange="quickLog(this.value)">
-              <?php foreach ($metrics as $code => $m): ?><option value="<?= $code ?>"><?= e($m[0]) ?> (<?= e($m[1]) ?>)</option><?php endforeach; ?>
-            </select>
+        <div class="modal-header border-0 pb-1"><h5 class="modal-title"><i class="bi bi-clipboard2-heart-fill text-teal"></i> บันทึกค่าร่างกาย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body text-center pt-1">
+          <div class="log-metric-choose mb-3">
+            <?php foreach ($metrics as $code => $m): ?>
+            <button type="button" class="lmc-btn<?= $code==='weight'?' active':'' ?>" data-metric="<?= $code ?>" style="--mc:<?= e($m[3]) ?>" onclick="quickLog('<?= $code ?>')">
+              <span class="lmc-ic"><i class="bi <?= $m[2] ?>"></i></span>
+              <span class="lmc-name"><?= e($m[0]) ?></span>
+            </button>
+            <?php endforeach; ?>
           </div>
+          <div class="log-what text-secondary small mb-2">กำลังบันทึก: <b id="l-title" class="text-body">น้ำหนัก</b></div>
           <div class="big-input-wrap"><input type="number" step="any" name="val" id="l-val" class="big-input" placeholder="0" required autofocus><span class="big-unit" id="l-unit">กก.</span></div>
           <div class="ref-hint mb-3" id="l-ref"></div>
           <div class="row g-2 text-start"><div class="col-7"><label class="form-label x-sm">วันที่</label><input type="date" name="log_date" id="l-date" class="form-control" value="<?= e(date('Y-m-d')) ?>" required></div><div class="col-5"><label class="form-label x-sm">&nbsp;</label><input type="text" name="note" id="l-note" class="form-control" placeholder="หมายเหตุ"></div></div>
@@ -406,20 +385,27 @@ require __DIR__ . '/includes/header.php';
               <div class="col-md-6"><label class="form-label">สรุปผลการตรวจโดยแพทย์</label><textarea name="summary" id="c-summary" class="form-control" rows="2"></textarea></div>
             </div></div>
             <?php $gidx=2; foreach ($catalog as $group=>$tests): ?>
-            <div class="tab-pane fade" id="<?= $tabId($gidx) ?>"><div class="row g-3">
+            <div class="tab-pane fade" id="<?= $tabId($gidx) ?>">
+              <div class="lab-form-head"><span><?= e($group) ?></span><span class="text-secondary">ค่าอ้างอิง</span></div>
+              <div class="lab-form-grid">
               <?php foreach ($tests as $t): $opts=$t[7]??null; $isText=($t[6]??'num')==='text'; ?>
-              <div class="col-6 col-md-4 col-xl-3"><label class="form-label"><?= e($t[1]) ?><?= $t[3]?' <span class="ref-hint">'.e($t[3]).'</span>':'' ?></label>
-                <?php if ($opts): ?>
-                <select name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-select">
-                  <option value="">— เลือก —</option>
-                  <?php foreach ($opts as $o): ?><option value="<?= e($o) ?>"><?= e($o) ?></option><?php endforeach; ?>
-                </select>
-                <?php else: ?>
-                <div class="input-group"><input type="<?= $isText?'text':'number' ?>" step="any" name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-control"<?= (!$isText && $t[3]) ? ' placeholder="'.e($t[3]).'"' : '' ?>><?php if($t[2]):?><span class="input-group-text"><?= e($t[2]) ?></span><?php endif;?></div>
-                <?php endif; ?>
+              <div class="lab-form-row">
+                <div class="lfr-name"><?= e($t[1]) ?><?php if($t[3]):?><span class="lfr-ref">ปกติ <?= e($t[3]) ?></span><?php endif;?></div>
+                <div class="lfr-field">
+                  <?php if ($opts): ?>
+                  <select name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-select form-select-sm">
+                    <option value="">—</option>
+                    <?php foreach ($opts as $o): ?><option value="<?= e($o) ?>"><?= e($o) ?></option><?php endforeach; ?>
+                  </select>
+                  <?php else: ?>
+                  <input type="<?= $isText?'text':'number' ?>" step="any" name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-control form-control-sm"<?= (!$isText && $t[3]) ? ' placeholder="'.e($t[3]).'"' : '' ?>>
+                  <?php if($t[2]):?><span class="lfr-unit"><?= e($t[2]) ?></span><?php endif;?>
+                  <?php endif; ?>
+                </div>
               </div>
               <?php endforeach; ?>
-            </div></div>
+              </div>
+            </div>
             <?php $gidx++; endforeach; ?>
           </div>
         </div>

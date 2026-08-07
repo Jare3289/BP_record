@@ -234,24 +234,26 @@ function editCheckup(c) {
 // ===== บันทึกค่าสุขภาพรายครั้ง (quick log) =====
 function quickLog(code) {
   const m = (window.HEALTH_METRICS || {})[code];
-  document.getElementById('l-id').value = '';
-  document.getElementById('l-metric').value = code;
-  const sel = document.getElementById('l-metric-sel');
-  if (sel) sel.value = code;
-  document.getElementById('l-val').value = '';
-  document.getElementById('l-note').value = '';
+  const set = (id, prop, val) => { const el = document.getElementById(id); if (el) el[prop] = val; };
+  set('l-id', 'value', '');
+  set('l-metric', 'value', code);
+  set('l-metric-sel', 'value', code);
+  set('l-val', 'value', '');
+  set('l-note', 'value', '');
+  // ไฮไลต์ปุ่มค่าที่เลือก
+  document.querySelectorAll('.lmc-btn').forEach(b => b.classList.toggle('active', b.dataset.metric === code));
   if (m) {
-    document.getElementById('l-title').textContent = m[0];
-    document.getElementById('l-unit').textContent = m[1];
-    document.getElementById('l-ic').innerHTML = '<i class="bi ' + m[2] + '"></i>';
-    document.getElementById('l-ic').style.color = m[3];
+    set('l-title', 'textContent', m[0]);
+    set('l-unit', 'textContent', m[1]);
+    const ic = document.getElementById('l-ic');
+    if (ic) { ic.innerHTML = '<i class="bi ' + m[2] + '"></i>'; ic.style.color = m[3]; }
     let ref = '';
     if (m[4] !== null && m[5] !== null) ref = 'เกณฑ์แนะนำ ' + m[4] + '–' + m[5] + ' ' + m[1];
     else if (m[4] !== null) ref = 'เกณฑ์แนะนำ ≥ ' + m[4] + ' ' + m[1];
     else if (m[5] !== null) ref = 'เกณฑ์แนะนำ ≤ ' + m[5] + ' ' + m[1];
-    document.getElementById('l-ref').textContent = ref;
+    set('l-ref', 'textContent', ref);
   }
-  setTimeout(() => document.getElementById('l-val').focus(), 300);
+  setTimeout(() => { const v = document.getElementById('l-val'); if (v) v.focus(); }, 300);
 }
 function editHealth(l) {
   quickLog(l.metric);
