@@ -3,6 +3,7 @@ require __DIR__ . '/includes/config.php';
 require __DIR__ . '/includes/functions.php';
 
 $phases = load_phases();
+$chartStd = bp_standard();
 $days   = group_days(all_readings());   // เก่า→ใหม่
 
 // เตรียมข้อมูลรายวัน
@@ -137,7 +138,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="mb-4">
   <h1 class="page-title mb-1"><i class="bi bi-graph-up-arrow"></i> กราฟแนวโน้มความดันโลหิต</h1>
-  <p class="text-secondary mb-0">แผนภาพกระจาย · เปรียบเทียบตามช่วง · แนวโน้มความดันและชีพจร (เกณฑ์สมาคมความดันฯ ไทย)</p>
+  <p class="text-secondary mb-0">แผนภาพกระจาย · เปรียบเทียบตามช่วง · แนวโน้มความดันและชีพจร (เกณฑ์<?= e(bp_standard_name($chartStd)) ?>)</p>
 </div>
 
 <div class="row g-4">
@@ -166,14 +167,18 @@ require __DIR__ . '/includes/header.php';
         <?php else: ?>
         <div class="chart-box">
         <svg viewBox="0 0 <?= $W ?> <?= $H ?>" class="bp-chart" role="img">
-          <!-- โซนตามเกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย: วาดจากรุนแรงสุด (พื้นหลัง) ไปหาปกติ (บนสุด)
+          <!-- โซนตามเกณฑ์ที่เลือก (สากล/ไทย): วาดจากรุนแรงสุด (พื้นหลัง) ไปหาปกติ (บนสุด)
                classify แบบ "บนและ/หรือล่าง" = สี่เหลี่ยมซ้อนจากมุมล่างซ้าย -->
-          <?= $zone($DIA_MIN, $DIA_MAX, $SYS_MIN, $SYS_MAX, '#e0699a') ?><!-- สูงระดับ 3 (พื้นหลัง) -->
-          <?= $zone(40, 110, 70, 180, '#f2a07a') ?><!-- ≤ สูงระดับ 2 -->
-          <?= $zone(40, 100, 70, 160, '#f4d06a') ?><!-- ≤ สูงระดับ 1 -->
-          <?= $zone(40, 90,  70, 140, '#b6d97f') ?><!-- ≤ เริ่มเสี่ยง -->
-          <?= $zone(40, 80,  70, 130, '#6fbf8f') ?><!-- ≤ ปกติ -->
-          <?php foreach ([70,100,130,140,160,170] as $s): $y=$py($s); ?>
+          <?php
+            // [dia_hi, sys_hi, สี] เรียงจากระดับสูงสุด→ปกติ
+            $zoneDefs = $chartStd === 'th'
+              ? [[110,180,'#f2a07a'],[100,160,'#f4d06a'],[90,140,'#b6d97f'],[80,130,'#6fbf8f']]
+              : [[120,180,'#f2a07a'],[90,140,'#f4d06a'],[80,130,'#b6d97f'],[80,120,'#6fbf8f']];
+            $sysTicks = $chartStd === 'th' ? [70,100,130,140,160,170] : [70,120,130,140,170];
+          ?>
+          <?= $zone($DIA_MIN, $DIA_MAX, $SYS_MIN, $SYS_MAX, '#e0699a') ?><!-- ระดับสูงสุด (พื้นหลัง) -->
+          <?php foreach ($zoneDefs as $z): ?><?= $zone(40, $z[0], 70, $z[1], $z[2]) ?><?php endforeach; ?>
+          <?php foreach ($sysTicks as $s): $y=$py($s); ?>
             <line x1="<?= $L ?>" y1="<?= $y ?>" x2="<?= $L+$plotW ?>" y2="<?= $y ?>" stroke="#fff" stroke-width="1" opacity="0.5"/>
             <text x="<?= $L-8 ?>" y="<?= $y+4 ?>" text-anchor="end" class="axl"><?= $s ?></text>
           <?php endforeach; ?>
@@ -248,7 +253,7 @@ require __DIR__ . '/includes/header.php';
           echo '<div class="chart-box">' . svg_line($bpPts,
             [['key'=>'sys','color'=>'#57b894','width'=>3,'area'=>true],
              ['key'=>'dia','color'=>'#2c5c7a','width'=>2.5]],
-            60, 175, [80,130,140,160], 960, 240) . '</div>';
+            60, 175, ($chartStd==='th'?[80,130,140,160]:[80,120,130,140]), 960, 240) . '</div>';
         else: echo '<p class="text-center text-secondary py-4">ยังไม่มีข้อมูล</p>'; endif; ?>
         <div class="d-flex gap-3 mt-1 x-sm text-secondary">
           <span><span class="ll-dot" style="background:#57b894"></span> ความดันบน</span>

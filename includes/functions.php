@@ -31,13 +31,24 @@ function daily_average(array $row): array
 }
 
 /**
- * แปลผลความดันโลหิตตามเกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย
- * (Thai Hypertension Society — แนวทางการรักษาโรคความดันโลหิตสูง)
- * คืน ['label' => ข้อความ, 'level' => 0-4, 'class' => css class]
- *
- * level: 0 = ปกติ (Optimal/Normal), 1 = เริ่มเสี่ยง (BP at risk),
- *        2 = สูงระดับ 1, 3 = สูงระดับ 2, 4 = สูงระดับ 3
- * เข้าเกณฑ์เมื่อค่าใดค่าหนึ่ง (บน "และ/หรือ" ล่าง) ถึงระดับ
+ * มาตรฐานการแปลผลที่เลือกใช้: 'intl' = ACC/AHA (สากล, ค่าเริ่มต้น) | 'th' = สมาคมความดันฯ ไทย
+ */
+function bp_standard(): string
+{
+    return get_setting('bp_standard', 'intl') === 'th' ? 'th' : 'intl';
+}
+
+/** ป้ายชื่อมาตรฐานสำหรับแสดงผล */
+function bp_standard_name(?string $std = null): string
+{
+    $std = $std ?? bp_standard();
+    return $std === 'th' ? 'สมาคมความดันฯ ไทย' : 'สากล (ACC/AHA)';
+}
+
+/**
+ * แปลผลความดันโลหิต — เลือกได้ 2 มาตรฐาน (สลับได้ผ่านการตั้งค่า bp_standard)
+ *   intl = ACC/AHA 2017 (ค่าเริ่มต้น) · th = สมาคมความดันโลหิตสูงแห่งประเทศไทย
+ * คืน ['label', 'level'(0-4), 'class'] — level/สี ใช้ชุดเดียวกันทั้งสองมาตรฐาน
  */
 function classify_bp(?int $sys, ?int $dia): array
 {
@@ -45,24 +56,45 @@ function classify_bp(?int $sys, ?int $dia): array
         return ['label' => '-', 'level' => -1, 'class' => 'bp-none'];
     }
 
-    // ความดันโลหิตสูงระดับ 3
-    if ($sys >= 180 || $dia >= 110) {
-        return ['label' => 'ความดันสูงระดับ 3', 'level' => 4, 'class' => 'bp-crisis'];
+    if (bp_standard() === 'th') {
+        // ---- สมาคมความดันโลหิตสูงแห่งประเทศไทย ----
+        if ($sys >= 180 || $dia >= 110) return ['label' => 'ความดันสูงระดับ 3', 'level' => 4, 'class' => 'bp-crisis'];
+        if ($sys >= 160 || $dia >= 100) return ['label' => 'ความดันสูงระดับ 2', 'level' => 3, 'class' => 'bp-stage2'];
+        if ($sys >= 140 || $dia >= 90)  return ['label' => 'ความดันสูงระดับ 1', 'level' => 2, 'class' => 'bp-stage1'];
+        if ($sys >= 130 || $dia >= 80)  return ['label' => 'เริ่มเสี่ยง', 'level' => 1, 'class' => 'bp-elevated'];
+        return ['label' => 'ปกติ', 'level' => 0, 'class' => 'bp-normal'];
     }
-    // ความดันโลหิตสูงระดับ 2
-    if ($sys >= 160 || $dia >= 100) {
-        return ['label' => 'ความดันสูงระดับ 2', 'level' => 3, 'class' => 'bp-stage2'];
-    }
-    // ความดันโลหิตสูงระดับ 1
-    if ($sys >= 140 || $dia >= 90) {
-        return ['label' => 'ความดันสูงระดับ 1', 'level' => 2, 'class' => 'bp-stage1'];
-    }
-    // เริ่มเสี่ยง — BP at risk
-    if ($sys >= 130 || $dia >= 80) {
-        return ['label' => 'เริ่มเสี่ยง', 'level' => 1, 'class' => 'bp-elevated'];
-    }
-    // ปกติ (Optimal / Normal)
+
+    // ---- ACC/AHA 2017 (สากล — ค่าเริ่มต้น) ----
+    if ($sys >= 180 || $dia >= 120) return ['label' => 'ภาวะวิกฤต ควรพบแพทย์', 'level' => 4, 'class' => 'bp-crisis'];
+    if ($sys >= 140 || $dia >= 90)  return ['label' => 'ความดันสูง ระยะที่ 2', 'level' => 3, 'class' => 'bp-stage2'];
+    if ($sys >= 130 || $dia >= 80)  return ['label' => 'ความดันสูง ระยะที่ 1', 'level' => 2, 'class' => 'bp-stage1'];
+    if ($sys >= 120)                return ['label' => 'สูงเล็กน้อย', 'level' => 1, 'class' => 'bp-elevated'];
     return ['label' => 'ปกติ', 'level' => 0, 'class' => 'bp-normal'];
+}
+
+/**
+ * ตารางเกณฑ์ของมาตรฐานหนึ่ง ๆ (สำหรับแสดงการ์ดอ้างอิง)
+ * คืน [[ชื่อระดับ, สี, ข้อความบน, ข้อความล่าง], ...]
+ */
+function bp_criteria_table(string $std): array
+{
+    if ($std === 'th') {
+        return [
+            ['ปกติ', '#16a34a', '<130', '<80'],
+            ['เริ่มเสี่ยง', '#65a30d', '130–139', '80–89'],
+            ['สูงระดับ 1', '#d99a1a', '140–159', '90–99'],
+            ['สูงระดับ 2', '#d1603a', '160–179', '100–109'],
+            ['สูงระดับ 3', '#b91c1c', '≥180', '≥110'],
+        ];
+    }
+    return [
+        ['ปกติ', '#16a34a', '<120', '<80'],
+        ['สูงเล็กน้อย', '#65a30d', '120–129', '<80'],
+        ['ระยะที่ 1', '#d99a1a', '130–139', '80–89'],
+        ['ระยะที่ 2', '#d1603a', '≥140', '≥90'],
+        ['วิกฤต', '#b91c1c', '≥180', '≥120'],
+    ];
 }
 
 /** helper escape */
@@ -193,7 +225,7 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
 {
     $monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
-    $lvlName  = [0=>'ปกติ',1=>'เริ่มเสี่ยง',2=>'สูงระดับ 1',3=>'สูงระดับ 2',4=>'สูงระดับ 3'];
+    $lvlName  = array_map(fn($r) => $r[0], bp_criteria_table(bp_standard()));
     $h = '';
     foreach ($years as $y) {
         $h .= '<div class="pixel-wrap ' . ((string)$y === (string)$curYear ? '' : 'd-none') . '" data-year="' . $y . '"><table class="pixel-grid"><thead><tr><th></th>';
@@ -214,11 +246,11 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
         $h .= '</tbody></table></div>';
     }
     $h .= '<div class="pixel-legend">'
-        . '<span><span class="px-cell px-normal"></span> ปกติ</span>'
-        . '<span><span class="px-cell px-elevated"></span> เริ่มเสี่ยง</span>'
-        . '<span><span class="px-cell px-stage1"></span> สูงระดับ 1</span>'
-        . '<span><span class="px-cell px-stage2"></span> สูงระดับ 2</span>'
-        . '<span><span class="px-cell px-crisis"></span> สูงระดับ 3</span>'
+        . '<span><span class="px-cell px-normal"></span> ' . htmlspecialchars($lvlName[0]) . '</span>'
+        . '<span><span class="px-cell px-elevated"></span> ' . htmlspecialchars($lvlName[1]) . '</span>'
+        . '<span><span class="px-cell px-stage1"></span> ' . htmlspecialchars($lvlName[2]) . '</span>'
+        . '<span><span class="px-cell px-stage2"></span> ' . htmlspecialchars($lvlName[3]) . '</span>'
+        . '<span><span class="px-cell px-crisis"></span> ' . htmlspecialchars($lvlName[4]) . '</span>'
         . '<span><span class="px-cell px-empty"></span> ไม่มีข้อมูล</span></div>';
     return $h;
 }
@@ -250,15 +282,15 @@ function checkup_catalog(): array
             ['sugar', 'น้ำตาลในเลือด (Glucose)', 'mg/dl', '70–99', 70, 99],
             ['hba1c', 'น้ำตาลสะสม (HbA1c)', '%', '<5.7', null, 5.7],
             ['bun', 'การทำงานของไต (BUN)', 'mg/dl', '6–20', 6, 20],
-            ['creatinine', 'ครีเอตินิน (Creatinine)', 'mg/dl', '0.67–1.17', 0.67, 1.17],
+            ['creatinine', 'ค่าไต (Creatinine)', 'mg/dl', '0.67–1.17', 0.67, 1.17],
             ['egfr', 'อัตราการกรองของไต (eGFR)', 'ml/min', '≥90', 90, null],
             ['uric', 'กรดยูริก (Uric Acid)', 'mg/dl', '3.4–7.0', 3.4, 7.0],
-            ['chol', 'โคเลสเตอรอล (Cholesterol)', 'mg/dl', '0–199', 0, 199],
-            ['tg', 'ไตรกลีเซอไรด์ (Triglyceride)', 'mg/dl', '0–150', 0, 150],
+            ['chol', 'ไขมันรวม (Cholesterol)', 'mg/dl', '0–199', 0, 199],
+            ['tg', 'ไขมันในเลือด (Triglyceride)', 'mg/dl', '0–150', 0, 150],
             ['hdl', 'ไขมันดี (HDL)', 'mg/dl', '≥40', 40, null],
             ['ldl', 'ไขมันไม่ดี (LDL)', 'mg/dl', '0–129', 0, 129],
-            ['sgot', 'เอนไซม์ตับ (AST/SGOT)', 'U/L', '0–50', 0, 50],
-            ['sgpt', 'เอนไซม์ตับ (ALT/SGPT)', 'U/L', '0–50', 0, 50],
+            ['sgot', 'เอนไซม์ตับ (AST)', 'U/L', '0–50', 0, 50],
+            ['sgpt', 'เอนไซม์ตับ (ALT)', 'U/L', '0–50', 0, 50],
             ['alp', 'เอนไซม์ตับ (ALP)', 'U/L', '40–129', 40, 129],
             ['ggt', 'เอนไซม์ตับ (GGT)', 'U/L', '10–71', 10, 71],
             ['vitd', 'วิตามินดี (Vitamin D)', 'ng/mL', '≥30', 30, null],
@@ -291,15 +323,15 @@ function checkup_catalog(): array
         ],
         'ความสมบูรณ์ของเม็ดเลือด (CBC)' => [
             ['rbc', 'เม็ดเลือดแดง (RBC)', 'mil/cu.mm', '4.5–6.0', 4.5, 6.0],
-            ['hb', 'ฮีโมโกลบิน (Hb)', 'g/dl', '13.0–18.0', 13, 18],
-            ['hct', 'ฮีมาโตคริต (Hct)', '%', '40–54', 40, 54],
+            ['hb', 'ความเข้มข้นเลือด (Hb)', 'g/dl', '13.0–18.0', 13, 18],
+            ['hct', 'ปริมาตรเม็ดเลือดแดง (Hct)', '%', '40–54', 40, 54],
             ['mcv', 'ขนาดเม็ดเลือดแดง (MCV)', 'fL', '80–99', 80, 99],
             ['wbc', 'เม็ดเลือดขาว (WBC)', 'cells/cu.mm', '4000–10000', 4000, 10000],
-            ['neu', 'นิวโทรฟิล (Neutrophil)', '%', '40–74', 40, 74],
-            ['lym', 'ลิมโฟไซต์ (Lymphocyte)', '%', '19–48', 19, 48],
-            ['mono', 'โมโนไซต์ (Monocyte)', '%', '2–10', 2, 10],
-            ['eos', 'อีโอซิโนฟิล (Eosinophil)', '%', '0–7', 0, 7],
-            ['baso', 'เบโซฟิล (Basophil)', '%', '0–2', 0, 2],
+            ['neu', 'เม็ดเลือดขาวชนิดหนึ่ง (Neutrophil)', '%', '40–74', 40, 74],
+            ['lym', 'เม็ดเลือดขาวชนิดหนึ่ง (Lymphocyte)', '%', '19–48', 19, 48],
+            ['mono', 'เม็ดเลือดขาวชนิดหนึ่ง (Monocyte)', '%', '2–10', 2, 10],
+            ['eos', 'เม็ดเลือดขาวชนิดหนึ่ง (Eosinophil)', '%', '0–7', 0, 7],
+            ['baso', 'เม็ดเลือดขาวชนิดหนึ่ง (Basophil)', '%', '0–2', 0, 2],
             ['plt', 'เกล็ดเลือด (Platelet)', 'Cells/cu.mm', '140000–450000', 140000, 450000],
             ['morph', 'รูปร่างเม็ดเลือดแดง (RBC Morphology)', '', 'Normal', null, null, 'text', ['Normal', 'Abnormal']],
         ],
@@ -423,7 +455,7 @@ function sparkline_svg(array $values, string $color = '#57b894', int $w = 120, i
 function reference_sources(): array
 {
     return [
-        ['ความดันโลหิต', 'เกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย (Thai Hypertension Society) · วัดที่บ้าน (HBPM) สูงเมื่อ ≥135/85'],
+        ['ความดันโลหิต', 'ค่าเริ่มต้น ACC/AHA 2017 (สากล) · สลับเป็นเกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทยได้ที่แดชบอร์ด · วัดที่บ้านสูงเมื่อ ≥135/85'],
         ['ดัชนีมวลกาย (BMI)', 'เกณฑ์เอเชีย-แปซิฟิก (WHO Asia-Pacific 2004)'],
         ['รอบเอว', 'ชาย < 90 ซม. · หญิง < 80 ซม. (IDF / กรมอนามัย)'],
         ['ระดับไขมันในเลือด', 'NCEP ATP III / แนวทางราชวิทยาลัยอายุรแพทย์ฯ'],
