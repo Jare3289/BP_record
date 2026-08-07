@@ -144,9 +144,9 @@ require __DIR__ . '/includes/header.php';
 <div class="row g-4">
   <!-- Scatter -->
   <div class="col-12 col-xl-7">
-    <div class="card app-card h-100">
+    <div class="card app-card h-100 d-flex flex-column">
       <div class="card-header"><i class="bi bi-bullseye"></i> แผนภาพกระจายตามโซนระดับความดัน</div>
-      <div class="card-body">
+      <div class="card-body d-flex flex-column">
         <?php if ($phases): ?>
         <div class="phase-chips mb-3">
           <button class="phase-chip active" id="chip-all" onclick="clearPhases()"><i class="bi bi-grid-3x3"></i> ทั้งหมด</button>
@@ -165,8 +165,8 @@ require __DIR__ . '/includes/header.php';
         <?php if (!$scatter): ?>
           <p class="text-center text-secondary py-5"><i class="bi bi-inbox fs-3 d-block mb-2"></i> ยังไม่มีข้อมูล</p>
         <?php else: ?>
-        <div class="chart-box">
-        <svg viewBox="0 0 <?= $W ?> <?= $H ?>" class="bp-chart" role="img">
+        <div class="chart-box scatter-fit">
+        <svg viewBox="0 0 <?= $W ?> <?= $H ?>" class="bp-chart" role="img" preserveAspectRatio="xMidYMid meet">
           <!-- โซนตามเกณฑ์ที่เลือก (สากล/ไทย): วาดจากรุนแรงสุด (พื้นหลัง) ไปหาปกติ (บนสุด)
                classify แบบ "บนและ/หรือล่าง" = สี่เหลี่ยมซ้อนจากมุมล่างซ้าย -->
           <?php
