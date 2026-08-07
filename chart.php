@@ -125,7 +125,7 @@ function svg_line(array $pts, array $series, float $ymin, float $ymax, array $gr
 
 // พิกัด scatter
 $DIA_MIN = 40; $DIA_MAX = 100; $SYS_MIN = 70; $SYS_MAX = 170;
-$W = 640; $H = 500; $L = 52; $R = 20; $T = 24; $B = 46;
+$W = 980; $H = 540; $L = 52; $R = 20; $T = 24; $B = 46;
 $plotW = $W - $L - $R; $plotH = $H - $T - $B;
 $px = fn($dia) => $L + (max($DIA_MIN, min($DIA_MAX, $dia)) - $DIA_MIN) / ($DIA_MAX - $DIA_MIN) * $plotW;
 $py = fn($sys) => $T + ($SYS_MAX - max($SYS_MIN, min($SYS_MAX, $sys))) / ($SYS_MAX - $SYS_MIN) * $plotH;
@@ -143,7 +143,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="row g-4">
   <!-- Scatter -->
-  <div class="col-12 col-xl-7">
+  <div class="col-12">
     <div class="card app-card h-100">
       <div class="card-header"><i class="bi bi-bullseye"></i> แผนภาพกระจายตามโซนระดับความดัน</div>
       <div class="card-body">
@@ -207,7 +207,7 @@ require __DIR__ . '/includes/header.php';
   </div>
 
   <!-- เปรียบเทียบรายช่วง = จอเครื่องวัดความดัน -->
-  <div class="col-12 col-xl-5">
+  <div class="col-12">
     <div class="card app-card">
       <div class="card-header"><i class="bi bi-activity"></i> ค่าเฉลี่ยตามช่วง (จอเครื่องวัด)</div>
       <div class="card-body">
@@ -217,15 +217,15 @@ require __DIR__ . '/includes/header.php';
         <?php if (count($monitors) > 1): ?>
         <div class="phase-chips mb-3" id="monChips">
           <?php foreach ($monitors as $i => $m): ?>
-            <button class="phase-chip active" style="--pc:<?= e($m['color']) ?>" data-mon-toggle="<?= $i ?>" onclick="toggleMon('<?= $i ?>', this)">
+            <button class="phase-chip <?= $i < 4 ? 'active' : '' ?>" style="--pc:<?= e($m['color']) ?>" data-mon-toggle="<?= $i ?>" onclick="toggleMon('<?= $i ?>', this)">
               <i class="bi <?= !empty($m['overall']) ? 'bi-grid-3x3-gap-fill' : 'bi-circle-fill' ?>"></i> <?= e($m['name']) ?>
             </button>
           <?php endforeach; ?>
         </div>
         <?php endif; ?>
-        <div class="monitor-grid">
+        <div class="monitor-grid" data-max="4">
           <?php foreach ($monitors as $i => $m): ?>
-          <div class="bp-monitor <?= !empty($m['overall']) ? 'mon-overall' : '' ?>" data-mon="<?= $i ?>" style="--pc:<?= e($m['color']) ?>">
+          <div class="bp-monitor <?= !empty($m['overall']) ? 'mon-overall' : '' ?> <?= $i >= 4 ? 'd-none' : '' ?>" data-mon="<?= $i ?>" style="--pc:<?= e($m['color']) ?>">
             <div class="mon-head"><span class="mon-dot"></span> <?= e($m['name']) ?> <span class="mon-days"><?= $m['days'] ?> วัน</span></div>
             <div class="mon-screen">
               <div class="mon-row"><span class="mon-lbl">SYS</span><span class="mon-val"><?= $m['sys'] ?></span><span class="mon-unit">mmHg</span></div>
@@ -236,7 +236,7 @@ require __DIR__ . '/includes/header.php';
           </div>
           <?php endforeach; ?>
         </div>
-        <p class="text-center text-secondary small mt-3 mb-0"><i class="bi bi-info-circle"></i> กดชิปเพื่อเลือกว่าจะแสดงจอไหนบ้าง · เพิ่มช่วงได้ที่ <a href="phases.php">ช่วงการรักษา</a></p>
+        <p class="text-center text-secondary small mt-3 mb-0"><i class="bi bi-info-circle"></i> เลือกแสดงได้สูงสุด 4 จอ · กดชิปเพื่อเลือกว่าจะแสดงจอไหน · เพิ่มช่วงได้ที่ <a href="phases.php">ช่วงการรักษา</a></p>
         <?php endif; ?>
       </div>
     </div>

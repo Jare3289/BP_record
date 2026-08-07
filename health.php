@@ -388,24 +388,30 @@ require __DIR__ . '/includes/header.php';
             </div></div>
             <?php $gidx=2; foreach ($catalog as $group=>$tests): ?>
             <div class="tab-pane fade" id="<?= $tabId($gidx) ?>">
-              <div class="lab-form-head"><span><?= e($group) ?></span><span class="text-secondary">ค่าอ้างอิง</span></div>
-              <div class="lab-form-grid">
-              <?php foreach ($tests as $t): $opts=$t[7]??null; $isText=($t[6]??'num')==='text'; ?>
-              <div class="lab-form-row">
-                <div class="lfr-name"><?= e($t[1]) ?><?php if($t[3]):?><span class="lfr-ref">ปกติ <?= e($t[3]) ?></span><?php endif;?></div>
-                <div class="lfr-field">
-                  <?php if ($opts): ?>
-                  <select name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-select form-select-sm">
-                    <option value="">—</option>
-                    <?php foreach ($opts as $o): ?><option value="<?= e($o) ?>"><?= e($o) ?></option><?php endforeach; ?>
-                  </select>
-                  <?php else: ?>
-                  <input type="<?= $isText?'text':'number' ?>" step="any" name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-control form-control-sm"<?= (!$isText && $t[3]) ? ' placeholder="'.e($t[3]).'"' : '' ?>>
-                  <?php if($t[2]):?><span class="lfr-unit"><?= e($t[2]) ?></span><?php endif;?>
-                  <?php endif; ?>
-                </div>
-              </div>
-              <?php endforeach; ?>
+              <div class="lab-entry-title"><i class="bi bi-clipboard2-pulse"></i> <?= e($group) ?></div>
+              <div class="table-responsive">
+                <table class="lab-entry">
+                  <thead><tr><th>รายการตรวจ</th><th class="le-c">ผลตรวจ</th><th class="le-c">หน่วย</th><th class="le-c">ค่าปกติ</th></tr></thead>
+                  <tbody>
+                  <?php foreach ($tests as $t): $opts=$t[7]??null; $isText=($t[6]??'num')==='text'; ?>
+                  <tr>
+                    <td class="le-name"><?= e($t[1]) ?></td>
+                    <td class="le-input">
+                      <?php if ($opts): ?>
+                      <select name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-select form-select-sm">
+                        <option value="">—</option>
+                        <?php foreach ($opts as $o): ?><option value="<?= e($o) ?>"><?= e($o) ?></option><?php endforeach; ?>
+                      </select>
+                      <?php else: ?>
+                      <input type="<?= $isText?'text':'number' ?>" step="any" name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-control form-control-sm"<?= (!$isText && $t[3]) ? ' placeholder="'.e($t[3]).'"' : '' ?>>
+                      <?php endif; ?>
+                    </td>
+                    <td class="le-unit"><?= e($t[2]) ?></td>
+                    <td class="le-ref"><?= e($t[3]) ?></td>
+                  </tr>
+                  <?php endforeach; ?>
+                  </tbody>
+                </table>
               </div>
             </div>
             <?php $gidx++; endforeach; ?>

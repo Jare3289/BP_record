@@ -83,18 +83,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
     </div>
   </section>
 
-  <!-- แถบเลือกเกณฑ์แปลผล (สลับสากล/ไทย) -->
   <?php $curStd = bp_standard(); ?>
-  <div class="bp-std mb-4">
-    <span class="bp-std-lbl"><i class="bi bi-clipboard2-pulse"></i> เกณฑ์แปลผลความดัน</span>
-    <form method="post" action="save.php" class="bp-seg" data-active="<?= $curStd ?>">
-      <input type="hidden" name="action" value="set_standard"><input type="hidden" name="back" value="dashboard.php">
-      <span class="bp-seg-thumb"></span>
-      <button name="bp_standard" value="intl" class="bp-seg-btn <?= $curStd==='intl'?'on':'' ?>">สากล</button>
-      <button name="bp_standard" value="th" class="bp-seg-btn <?= $curStd==='th'?'on':'' ?>">ไทย</button>
-    </form>
-  </div>
-
   <div class="row g-3">
     <div class="col-12 col-xxl-9">
       <div class="row g-3">
