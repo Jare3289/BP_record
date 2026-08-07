@@ -234,21 +234,21 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
         <div class="nc-big"><div class="text-white-50 small">ค่าเฉลี่ยความดัน</div><div class="nc-bp"><?= e($avgS) ?>/<?= e($avgD) ?></div></div>
       </div>
       </div>
-      <!-- เกณฑ์ ACC/AHA -->
+      <!-- เกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย -->
       <div class="widget" data-widget="ref">
       <div class="soft-card acc-ref mt-3 h-100">
-        <div class="acc-title"><i class="bi bi-clipboard2-heart"></i> เกณฑ์การแปลผล <span>ACC/AHA</span></div>
+        <div class="acc-title"><i class="bi bi-clipboard2-heart"></i> เกณฑ์ความดัน <span>สมาคมความดันฯ ไทย</span></div>
         <table class="acc-table">
           <thead><tr><th>ระดับ</th><th>บน</th><th>ล่าง</th></tr></thead>
           <tbody>
-          <tr><td><span class="acc-dot" style="background:#16a34a"></span> ปกติ</td><td>&lt;120</td><td>&lt;80</td></tr>
-          <tr><td><span class="acc-dot" style="background:#65a30d"></span> สูงเล็กน้อย</td><td>120–129</td><td>&lt;80</td></tr>
-          <tr><td><span class="acc-dot" style="background:#d99a1a"></span> ระยะที่ 1</td><td>130–139</td><td>80–89</td></tr>
-          <tr><td><span class="acc-dot" style="background:#d1603a"></span> ระยะที่ 2</td><td>≥140</td><td>≥90</td></tr>
-          <tr><td><span class="acc-dot" style="background:#b91c1c"></span> วิกฤต</td><td>≥180</td><td>≥120</td></tr>
+          <tr><td><span class="acc-dot" style="background:#16a34a"></span> ปกติ</td><td>&lt;130</td><td>&lt;80</td></tr>
+          <tr><td><span class="acc-dot" style="background:#65a30d"></span> เริ่มเสี่ยง</td><td>130–139</td><td>80–89</td></tr>
+          <tr><td><span class="acc-dot" style="background:#d99a1a"></span> สูงระดับ 1</td><td>140–159</td><td>90–99</td></tr>
+          <tr><td><span class="acc-dot" style="background:#d1603a"></span> สูงระดับ 2</td><td>160–179</td><td>100–109</td></tr>
+          <tr><td><span class="acc-dot" style="background:#b91c1c"></span> สูงระดับ 3</td><td>≥180</td><td>≥110</td></tr>
           </tbody>
         </table>
-        <div class="acc-note"><i class="bi bi-info-circle"></i> หน่วย mmHg · เข้าเกณฑ์เมื่อค่าใดค่าหนึ่งถึงระดับ</div>
+        <div class="acc-note"><i class="bi bi-info-circle"></i> หน่วย mmHg · เข้าเกณฑ์เมื่อค่าใดค่าหนึ่ง (และ/หรือ) ถึงระดับ</div>
       </div>
       </div>
     </div>
@@ -277,7 +277,7 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
     <div id="widgetToggles" class="widget-toggles">
       <?php foreach ([
         'latest'=>'ค่าล่าสุด','pixel'=>'ปฏิทิน Pixel','gauge'=>'สรุประดับความดัน',
-        'control'=>'คุมได้ vs เกินเป้า','trend'=>'กราฟแนวโน้ม','recent'=>'รายการล่าสุด','summary'=>'สรุปค่าเฉลี่ย','ref'=>'เกณฑ์ ACC/AHA'] as $wid=>$lbl): ?>
+        'control'=>'คุมได้ vs เกินเป้า','trend'=>'กราฟแนวโน้ม','recent'=>'รายการล่าสุด','summary'=>'สรุปค่าเฉลี่ย','ref'=>'เกณฑ์ความดัน (ไทย)'] as $wid=>$lbl): ?>
         <label class="wt-row"><span><?= $lbl ?></span>
           <input type="checkbox" class="form-check-input" data-widget-toggle="<?= $wid ?>" checked></label>
       <?php endforeach; ?>

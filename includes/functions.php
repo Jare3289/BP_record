@@ -31,10 +31,13 @@ function daily_average(array $row): array
 }
 
 /**
- * แปลผลความดันโลหิตตามเกณฑ์ ACC/AHA
+ * แปลผลความดันโลหิตตามเกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย
+ * (Thai Hypertension Society — แนวทางการรักษาโรคความดันโลหิตสูง)
  * คืน ['label' => ข้อความ, 'level' => 0-4, 'class' => css class]
  *
- * level: 0 = ปกติ, 1 = สูงเล็กน้อย, 2 = ระยะที่1, 3 = ระยะที่2, 4 = วิกฤต
+ * level: 0 = ปกติ (Optimal/Normal), 1 = เริ่มเสี่ยง (BP at risk),
+ *        2 = สูงระดับ 1, 3 = สูงระดับ 2, 4 = สูงระดับ 3
+ * เข้าเกณฑ์เมื่อค่าใดค่าหนึ่ง (บน "และ/หรือ" ล่าง) ถึงระดับ
  */
 function classify_bp(?int $sys, ?int $dia): array
 {
@@ -42,23 +45,23 @@ function classify_bp(?int $sys, ?int $dia): array
         return ['label' => '-', 'level' => -1, 'class' => 'bp-none'];
     }
 
-    // ภาวะวิกฤต (Hypertensive crisis)
-    if ($sys >= 180 || $dia >= 120) {
-        return ['label' => 'ภาวะวิกฤต ควรพบแพทย์', 'level' => 4, 'class' => 'bp-crisis'];
+    // ความดันโลหิตสูงระดับ 3
+    if ($sys >= 180 || $dia >= 110) {
+        return ['label' => 'ความดันสูงระดับ 3', 'level' => 4, 'class' => 'bp-crisis'];
     }
-    // ระยะที่ 2
+    // ความดันโลหิตสูงระดับ 2
+    if ($sys >= 160 || $dia >= 100) {
+        return ['label' => 'ความดันสูงระดับ 2', 'level' => 3, 'class' => 'bp-stage2'];
+    }
+    // ความดันโลหิตสูงระดับ 1
     if ($sys >= 140 || $dia >= 90) {
-        return ['label' => 'ความดันโลหิตสูง ระยะที่ 2', 'level' => 3, 'class' => 'bp-stage2'];
+        return ['label' => 'ความดันสูงระดับ 1', 'level' => 2, 'class' => 'bp-stage1'];
     }
-    // ระยะที่ 1
+    // เริ่มเสี่ยง — BP at risk
     if ($sys >= 130 || $dia >= 80) {
-        return ['label' => 'ความดันโลหิตสูง ระยะที่ 1', 'level' => 2, 'class' => 'bp-stage1'];
+        return ['label' => 'เริ่มเสี่ยง', 'level' => 1, 'class' => 'bp-elevated'];
     }
-    // สูงเล็กน้อย (Elevated)
-    if ($sys >= 120) {
-        return ['label' => 'ความดันโลหิตสูงเล็กน้อย', 'level' => 1, 'class' => 'bp-elevated'];
-    }
-    // ปกติ
+    // ปกติ (Optimal / Normal)
     return ['label' => 'ปกติ', 'level' => 0, 'class' => 'bp-normal'];
 }
 
@@ -190,7 +193,7 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
 {
     $monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
-    $lvlName  = [0=>'ปกติ',1=>'สูงเล็กน้อย',2=>'ระยะที่ 1',3=>'ระยะที่ 2',4=>'วิกฤต'];
+    $lvlName  = [0=>'ปกติ',1=>'เริ่มเสี่ยง',2=>'สูงระดับ 1',3=>'สูงระดับ 2',4=>'สูงระดับ 3'];
     $h = '';
     foreach ($years as $y) {
         $h .= '<div class="pixel-wrap ' . ((string)$y === (string)$curYear ? '' : 'd-none') . '" data-year="' . $y . '"><table class="pixel-grid"><thead><tr><th></th>';
@@ -212,10 +215,10 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
     }
     $h .= '<div class="pixel-legend">'
         . '<span><span class="px-cell px-normal"></span> ปกติ</span>'
-        . '<span><span class="px-cell px-elevated"></span> สูงเล็กน้อย</span>'
-        . '<span><span class="px-cell px-stage1"></span> ระยะที่ 1</span>'
-        . '<span><span class="px-cell px-stage2"></span> ระยะที่ 2</span>'
-        . '<span><span class="px-cell px-crisis"></span> วิกฤต</span>'
+        . '<span><span class="px-cell px-elevated"></span> เริ่มเสี่ยง</span>'
+        . '<span><span class="px-cell px-stage1"></span> สูงระดับ 1</span>'
+        . '<span><span class="px-cell px-stage2"></span> สูงระดับ 2</span>'
+        . '<span><span class="px-cell px-crisis"></span> สูงระดับ 3</span>'
         . '<span><span class="px-cell px-empty"></span> ไม่มีข้อมูล</span></div>';
     return $h;
 }
@@ -234,44 +237,57 @@ function pixel_data(array $days): array
 
 /**
  * แคตตาล็อกรายการตรวจสุขภาพ แบ่งเป็นกลุ่ม
- * แต่ละรายการ: [code, ชื่อ, หน่วย, ค่าอ้างอิง(ข้อความ), low, high, type('num'|'text')]
+ * แต่ละรายการ: [code, ชื่อ(ไทย(อังกฤษ)), หน่วย, ค่าอ้างอิง(ข้อความ), low, high, type('num'|'text'), options(array|null)]
+ * ถ้ามี options => แสดงเป็น dropdown (select) ในฟอร์มบันทึก
  */
 function checkup_catalog(): array
 {
+    // ตัวเลือกมาตรฐานสำหรับค่าที่ไม่ใช่ตัวเลข
+    $negPos  = ['Negative', 'Positive'];
+    $urScale = ['Negative', 'Trace', '1+', '2+', '3+'];
     return [
         'เคมีในเลือด (Blood Chemistry)' => [
-            ['sugar', 'น้ำตาล (Sugar)', 'mg/dl', '70–99', 70, 99],
+            ['sugar', 'น้ำตาลในเลือด (Glucose)', 'mg/dl', '70–99', 70, 99],
+            ['hba1c', 'น้ำตาลสะสม (HbA1c)', '%', '<5.7', null, 5.7],
             ['bun', 'การทำงานของไต (BUN)', 'mg/dl', '6–20', 6, 20],
-            ['creatinine', 'Creatinine', 'mg/dl', '0.67–1.17', 0.67, 1.17],
-            ['egfr', 'eGFR', 'ml/min', '≥90', 90, null],
-            ['uric', 'กรดยูริค (Uric Acid)', 'mg/dl', '3.4–7.0', 3.4, 7.0],
+            ['creatinine', 'ครีเอตินิน (Creatinine)', 'mg/dl', '0.67–1.17', 0.67, 1.17],
+            ['egfr', 'อัตราการกรองของไต (eGFR)', 'ml/min', '≥90', 90, null],
+            ['uric', 'กรดยูริก (Uric Acid)', 'mg/dl', '3.4–7.0', 3.4, 7.0],
             ['chol', 'โคเลสเตอรอล (Cholesterol)', 'mg/dl', '0–199', 0, 199],
             ['tg', 'ไตรกลีเซอไรด์ (Triglyceride)', 'mg/dl', '0–150', 0, 150],
             ['hdl', 'ไขมันดี (HDL)', 'mg/dl', '≥40', 40, null],
             ['ldl', 'ไขมันไม่ดี (LDL)', 'mg/dl', '0–129', 0, 129],
-            ['sgot', 'ตับ SGOT', 'U/L', '0–50', 0, 50],
-            ['sgpt', 'ตับ SGPT', 'U/L', '0–50', 0, 50],
-            ['alp', 'Alk.Phosphatase', 'U/L', '40–129', 40, 129],
-            ['ca', 'แคลเซียม (Ca)', 'mg/dl', '8.6–10.2', 8.6, 10.2],
-            ['hba1c', 'HbA1c', '%', '<5.7', null, 5.7],
-            ['ggt', 'GAMMA GT', 'U/L', '10–71', 10, 71],
-            ['vitd', 'Vitamin D', 'ng/mL', '≥30', 30, null],
+            ['sgot', 'เอนไซม์ตับ (AST/SGOT)', 'U/L', '0–50', 0, 50],
+            ['sgpt', 'เอนไซม์ตับ (ALT/SGPT)', 'U/L', '0–50', 0, 50],
+            ['alp', 'เอนไซม์ตับ (ALP)', 'U/L', '40–129', 40, 129],
+            ['ggt', 'เอนไซม์ตับ (GGT)', 'U/L', '10–71', 10, 71],
+            ['vitd', 'วิตามินดี (Vitamin D)', 'ng/mL', '≥30', 30, null],
+        ],
+        'แร่ธาตุและเกลือแร่ (Electrolytes & Minerals)' => [
+            ['na', 'โซเดียม (Sodium/Na)', 'mmol/L', '135–145', 135, 145],
+            ['k', 'โพแทสเซียม (Potassium/K)', 'mmol/L', '3.5–5.1', 3.5, 5.1],
+            ['cl', 'คลอไรด์ (Chloride/Cl)', 'mmol/L', '98–107', 98, 107],
+            ['co2', 'ไบคาร์บอเนต (Bicarbonate/CO₂)', 'mmol/L', '22–29', 22, 29],
+            ['ca', 'แคลเซียม (Calcium/Ca)', 'mg/dl', '8.6–10.2', 8.6, 10.2],
+            ['mg', 'แมกนีเซียม (Magnesium/Mg)', 'mg/dl', '1.7–2.4', 1.7, 2.4],
+            ['phos', 'ฟอสฟอรัส (Phosphorus/P)', 'mg/dl', '2.5–4.5', 2.5, 4.5],
+            ['fe', 'ธาตุเหล็ก (Iron/Fe)', 'µg/dl', '60–170', 60, 170],
         ],
         'มะเร็ง / ไทรอยด์ / ไวรัส' => [
             ['afp', 'มะเร็งตับ (AFP)', 'ng/ml', '0.0–7.0', 0, 7],
             ['cea', 'มะเร็งลำไส้ (CEA)', 'ng/ml', '<3.8', null, 3.8],
             ['psa', 'มะเร็งต่อมลูกหมาก (PSA)', 'ng/ml', '0–4', 0, 4],
-            ['ca125', 'CA125', 'U/ml', '<35', null, 35],
-            ['ca153', 'CA15-3', 'U/ml', '0–25', 0, 25],
-            ['ca199', 'CA19-9', 'U/ml', '0–39', 0, 39],
-            ['tsh', 'TSH', 'uIU/ml', '0.27–4.20', 0.27, 4.20],
-            ['ft4', 'FT4', 'ng/dl', '0.93–1.70', 0.93, 1.70],
-            ['ft3', 'FT3', 'pg/ml', '2.0–4.4', 2.0, 4.4],
-            ['esr', 'ESR', 'mm/hr', '0–9', 0, 9],
-            ['crp', 'CRP', 'mg/L', '<5.0', null, 5.0],
-            ['antihcv', 'Anti HCV', '', 'Negative', null, null, 'text'],
-            ['hbsag', 'HBs Ag', '', 'Negative', null, null, 'text'],
-            ['antihbs', 'Anti HBs', '', '-', null, null, 'text'],
+            ['ca125', 'มะเร็งรังไข่ (CA125)', 'U/ml', '<35', null, 35],
+            ['ca153', 'มะเร็งเต้านม (CA15-3)', 'U/ml', '0–25', 0, 25],
+            ['ca199', 'มะเร็งทางเดินอาหาร (CA19-9)', 'U/ml', '0–39', 0, 39],
+            ['tsh', 'ไทรอยด์ (TSH)', 'uIU/ml', '0.27–4.20', 0.27, 4.20],
+            ['ft4', 'ไทรอยด์ (FT4)', 'ng/dl', '0.93–1.70', 0.93, 1.70],
+            ['ft3', 'ไทรอยด์ (FT3)', 'pg/ml', '2.0–4.4', 2.0, 4.4],
+            ['esr', 'การอักเสบ (ESR)', 'mm/hr', '0–9', 0, 9],
+            ['crp', 'การอักเสบ (CRP)', 'mg/L', '<5.0', null, 5.0],
+            ['antihcv', 'ไวรัสตับอักเสบซี (Anti-HCV)', '', 'Negative', null, null, 'text', $negPos],
+            ['hbsag', 'ไวรัสตับอักเสบบี (HBsAg)', '', 'Negative', null, null, 'text', $negPos],
+            ['antihbs', 'ภูมิตับอักเสบบี (Anti-HBs)', '', 'Negative', null, null, 'text', $negPos],
         ],
         'ความสมบูรณ์ของเม็ดเลือด (CBC)' => [
             ['rbc', 'เม็ดเลือดแดง (RBC)', 'mil/cu.mm', '4.5–6.0', 4.5, 6.0],
@@ -279,33 +295,33 @@ function checkup_catalog(): array
             ['hct', 'ฮีมาโตคริต (Hct)', '%', '40–54', 40, 54],
             ['mcv', 'ขนาดเม็ดเลือดแดง (MCV)', 'fL', '80–99', 80, 99],
             ['wbc', 'เม็ดเลือดขาว (WBC)', 'cells/cu.mm', '4000–10000', 4000, 10000],
-            ['neu', 'Neutrophil', '%', '40–74', 40, 74],
-            ['lym', 'Lymphocyte', '%', '19–48', 19, 48],
-            ['mono', 'Monocyte', '%', '3–9', 3, 9],
-            ['eos', 'Eosinophil', '%', '0–7', 0, 7],
-            ['baso', 'Basophil', '%', '0–2', 0, 2],
+            ['neu', 'นิวโทรฟิล (Neutrophil)', '%', '40–74', 40, 74],
+            ['lym', 'ลิมโฟไซต์ (Lymphocyte)', '%', '19–48', 19, 48],
+            ['mono', 'โมโนไซต์ (Monocyte)', '%', '2–10', 2, 10],
+            ['eos', 'อีโอซิโนฟิล (Eosinophil)', '%', '0–7', 0, 7],
+            ['baso', 'เบโซฟิล (Basophil)', '%', '0–2', 0, 2],
             ['plt', 'เกล็ดเลือด (Platelet)', 'Cells/cu.mm', '140000–450000', 140000, 450000],
-            ['morph', 'รูปร่างเม็ดเลือดแดง', '', 'Normal', null, null, 'text'],
+            ['morph', 'รูปร่างเม็ดเลือดแดง (RBC Morphology)', '', 'Normal', null, null, 'text', ['Normal', 'Abnormal']],
         ],
         'ปัสสาวะ (Urine)' => [
-            ['u_color', 'สี (Color)', '', 'Yellow', null, null, 'text'],
-            ['u_appear', 'สภาพ (Appearance)', '', 'Clear', null, null, 'text'],
+            ['u_color', 'สี (Color)', '', 'Yellow', null, null, 'text', ['Yellow', 'Pale Yellow', 'Dark Yellow', 'Amber', 'Colorless', 'Red']],
+            ['u_appear', 'ลักษณะ (Appearance)', '', 'Clear', null, null, 'text', ['Clear', 'Slightly Cloudy', 'Cloudy', 'Turbid']],
             ['u_spgr', 'ความถ่วงจำเพาะ (Sp.gr)', '', '1.003–1.030', null, null, 'text'],
-            ['u_ph', 'ph', '', '5.0–8.0', null, null, 'text'],
-            ['u_protein', 'โปรตีน (Protein)', '', 'Negative', null, null, 'text'],
-            ['u_sugar', 'น้ำตาล (Sugar)', '', 'Negative', null, null, 'text'],
+            ['u_ph', 'ความเป็นกรด-ด่าง (pH)', '', '5.0–8.0', null, null, 'text'],
+            ['u_protein', 'โปรตีน (Protein)', '', 'Negative', null, null, 'text', $urScale],
+            ['u_sugar', 'น้ำตาล (Sugar)', '', 'Negative', null, null, 'text', $urScale],
             ['u_rbc', 'เม็ดเลือดแดง (RBC)', '/HPF', '0–2', null, null, 'text'],
             ['u_wbc', 'เม็ดเลือดขาว (WBC)', '/HPF', '0–5', null, null, 'text'],
-            ['u_epi', 'เซลล์เยื่อบุผิว', '/HPF', '0–10', null, null, 'text'],
+            ['u_epi', 'เซลล์เยื่อบุผิว (Epithelial)', '/HPF', '0–10', null, null, 'text'],
             ['u_other', 'อื่น ๆ (Other)', '', '', null, null, 'text'],
         ],
         'อุจจาระ (Stool)' => [
-            ['s_color', 'Color', '', '', null, null, 'text'],
-            ['s_appear', 'Appearance', '', '', null, null, 'text'],
-            ['s_wbc', 'WBC/HPF', '', '', null, null, 'text'],
-            ['s_rbc', 'RBC/HPF', '', '', null, null, 'text'],
-            ['s_para', 'Parasites & Ova', '', '', null, null, 'text'],
-            ['s_occult', 'Occult Blood', '', '', null, null, 'text'],
+            ['s_color', 'สี (Color)', '', '', null, null, 'text', ['Brown', 'Yellow', 'Green', 'Black', 'Red']],
+            ['s_appear', 'ลักษณะ (Appearance)', '', '', null, null, 'text', ['Formed', 'Soft', 'Loose', 'Watery', 'Mucous']],
+            ['s_wbc', 'เม็ดเลือดขาว (WBC/HPF)', '', '', null, null, 'text'],
+            ['s_rbc', 'เม็ดเลือดแดง (RBC/HPF)', '', '', null, null, 'text'],
+            ['s_para', 'พยาธิและไข่ (Parasites & Ova)', '', '', null, null, 'text', ['Not found', 'Found']],
+            ['s_occult', 'เลือดแฝง (Occult Blood)', '', '', null, null, 'text', $negPos],
         ],
     ];
 }
@@ -338,16 +354,9 @@ function checkup_flag(array $test, $val): string
 function health_metrics(): array
 {
     return [
-        'glucose'  => ['น้ำตาลปลายนิ้ว', 'mg/dl', 'bi-droplet-half', '#dc3545', 70, 140, '1'],
-        'weight'   => ['น้ำหนัก', 'กก.', 'bi-speedometer2', '#0d9488', null, null, '0.1'],
-        'waist'    => ['รอบเอว', 'ซม.', 'bi-rulers', '#65a30d', null, 90, '0.5'],
-        'sleep'    => ['การนอน', 'ชม.', 'bi-moon-stars-fill', '#6d4bb0', 7, 9, '0.5'],
-        'steps'    => ['ก้าวเดิน', 'ก้าว', 'bi-person-walking', '#2c5c7a', 6000, null, '100'],
-        'water'    => ['น้ำดื่ม', 'แก้ว', 'bi-cup-straw', '#0dcaf0', 8, null, '1'],
-        'exercise' => ['ออกกำลังกาย', 'นาที', 'bi-heart-pulse-fill', '#16a34a', 30, null, '5'],
-        'spo2'     => ['ออกซิเจนปลายนิ้ว', '%', 'bi-lungs-fill', '#0d6efd', 95, 100, '1'],
-        'temp'     => ['อุณหภูมิ', '°C', 'bi-thermometer-half', '#e0699a', 36, 37.5, '0.1'],
-        'mood'     => ['อารมณ์ (1-5)', '/5', 'bi-emoji-smile-fill', '#f2a71b', 3, 5, '1'],
+        'weight' => ['น้ำหนัก', 'กก.', 'bi-speedometer2', '#0d9488', null, null, '0.1'],
+        'height' => ['ส่วนสูง', 'ซม.', 'bi-rulers', '#2c5c7a', null, null, '0.5'],
+        'waist'  => ['รอบเอว', 'ซม.', 'bi-person-arms-up', '#65a30d', null, 90, '0.5'],
     ];
 }
 
@@ -414,12 +423,12 @@ function sparkline_svg(array $values, string $color = '#57b894', int $w = 120, i
 function reference_sources(): array
 {
     return [
-        ['ความดันโลหิต', 'เกณฑ์ ACC/AHA 2017 (วัดที่บ้าน 135/85, คลินิก 140/90)'],
+        ['ความดันโลหิต', 'เกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย (Thai Hypertension Society) · วัดที่บ้าน (HBPM) สูงเมื่อ ≥135/85'],
         ['ดัชนีมวลกาย (BMI)', 'เกณฑ์เอเชีย-แปซิฟิก (WHO Asia-Pacific 2004)'],
+        ['รอบเอว', 'ชาย < 90 ซม. · หญิง < 80 ซม. (IDF / กรมอนามัย)'],
         ['ระดับไขมันในเลือด', 'NCEP ATP III / แนวทางราชวิทยาลัยอายุรแพทย์ฯ'],
         ['น้ำตาล / HbA1c', 'สมาคมโรคเบาหวานแห่งประเทศไทย (ADA/สมาคมฯ)'],
         ['ค่าห้องปฏิบัติการ (Lab)', 'ช่วงอ้างอิงตามใบรายงานผลของห้องปฏิบัติการโรงพยาบาล'],
-        ['ค่าสุขภาพทั่วไป', 'คำแนะนำทั่วไป (นอน 7-9 ชม., เดิน ≥6,000 ก้าว, ดื่มน้ำ ~8 แก้ว/วัน)'],
     ];
 }
 

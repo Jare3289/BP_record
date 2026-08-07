@@ -1,5 +1,5 @@
 // ===== ฟอร์มเพิ่ม/แก้ไข การวัดรายครั้ง (Bootstrap modal) =====
-const FIELDS = ['sys', 'dia', 'hr', 'weight', 'height'];
+const FIELDS = ['sys', 'dia', 'hr'];
 
 function resetForm() {
   const form = document.getElementById('bpForm');

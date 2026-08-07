@@ -55,4 +55,5 @@ jobs:
             **/node_modules/**
             **/*.md
             **/config.local.example.php
-            schema.sql
+            *.sql
+            **/*.sql

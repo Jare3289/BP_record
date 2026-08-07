@@ -145,7 +145,7 @@ body { background: var(--bs-body-bg); }
 
 /* ---- กราฟ ---- */
 .chart-box { width: 100%; overflow-x: auto; text-align: center; }
-.bp-chart { width: 100%; max-width: 100%; height: auto; display: block; }
+.bp-chart { width: 100%; max-width: 500px; height: auto; display: block; margin: 0 auto; }
 .bp-chart .axl { font-size: 12px; fill: var(--bs-secondary-color); }
 .bp-chart .axttl { font-size: 12px; fill: var(--bs-body-color); font-weight: 700; }
 .bp-chart circle { cursor: pointer; transition: r .1s; }
@@ -722,3 +722,50 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 /* ---- footer ---- */
 .app-foot { margin-top: 34px; padding: 18px 0; color: var(--bs-secondary-color); font-size: .8rem; }
 .app-foot .bi { color: var(--brand); }
+
+/* ================= หน้าสุขภาพ: สรุปผลตรวจ (เด่น) ================= */
+.fs-15 { font-size: 1.02rem; font-weight: 600; }
+.ckx-card .card-header { font-size: 1rem; }
+.ckx-grid { display: grid; grid-template-columns: 230px 1fr; gap: 22px; align-items: center; }
+@media (max-width: 767.98px) { .ckx-grid { grid-template-columns: 1fr; } }
+
+/* โดนัทสรุป ปกติ/ผิดปกติ */
+.ckx-donut { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.donut-svg { width: 180px; max-width: 60vw; height: auto; }
+.donut-big { font-size: 34px; font-weight: 800; fill: #16a34a; }
+.donut-big.txt-abn { fill: #dc3545; }
+.donut-sub { font-size: 12px; fill: var(--bs-secondary-color); }
+.ckx-legend { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; text-align: center; }
+.ckx-legend span { display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.ckx-legend .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+/* แถบช่วงอ้างอิง (reference-range bar) */
+.ckx-bars { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px 22px; }
+@media (max-width: 991.98px) { .ckx-bars { grid-template-columns: 1fr; } }
+.refbar { display: flex; flex-direction: column; gap: 5px; padding: 4px 0; }
+.refbar-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.refbar-name { font-weight: 600; font-size: .9rem; }
+.refbar-val { font-weight: 800; font-size: 1.02rem; white-space: nowrap; }
+.refbar-val small { font-weight: 500; font-size: .68rem; color: var(--bs-secondary-color); margin-left: 3px; }
+.refbar-val.f-ok { color: #15803d; } .refbar-val.f-high { color: #dc2626; } .refbar-val.f-low { color: #d97706; }
+.refbar-arrow { font-style: normal; font-size: .7rem; margin-left: 4px; }
+.refbar-arrow.up { color: #dc2626; } .refbar-arrow.down { color: #2563eb; }
+.refbar-track { position: relative; height: 9px; border-radius: 999px;
+  background: linear-gradient(90deg,#fde2e2,#fef3cd 22%,#e7f6ea 50%,#fef3cd 78%,#fde2e2); overflow: visible; }
+[data-bs-theme="dark"] .refbar-track { background: linear-gradient(90deg,#4a2530,#4a3f20 22%,#1f3d2c 50%,#4a3f20 78%,#4a2530); }
+.refbar-band { position: absolute; top: 0; bottom: 0; background: rgba(22,163,74,.45); border-radius: 999px; }
+.refbar-mark { position: absolute; top: 50%; width: 13px; height: 13px; border-radius: 50%;
+  transform: translate(-50%,-50%); background: #16a34a; border: 2.5px solid var(--bs-body-bg); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.refbar-mark.f-high { background: #dc2626; } .refbar-mark.f-low { background: #d97706; }
+.refbar-ref { font-size: .72rem; color: var(--bs-secondary-color); }
+
+/* ค่าร่างกายล่าสุด (tiles) */
+.body-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+.body-tile { border: 1px solid var(--bs-border-color); border-radius: 14px; padding: 12px 8px; text-align: center;
+  background: color-mix(in srgb, var(--pc) 6%, transparent); }
+.body-tile .bt-ic { width: 34px; height: 34px; margin: 0 auto 6px; border-radius: 10px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--pc) 18%, transparent); color: var(--pc); font-size: 16px; }
+.body-tile .bt-name { font-size: .74rem; color: var(--bs-secondary-color); }
+.body-tile .bt-val { font-size: 1.15rem; font-weight: 800; margin-top: 2px; }
+.body-tile .bt-val small { font-size: .62rem; font-weight: 500; color: var(--bs-secondary-color); margin-left: 2px; }
+.body-tile .bt-val.f-high { color: #dc2626; } .body-tile .bt-val.f-low { color: #d97706; }
