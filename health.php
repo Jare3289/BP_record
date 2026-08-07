@@ -402,7 +402,18 @@ require __DIR__ . '/includes/header.php';
             </div></div>
             <?php $gidx=2; foreach ($catalog as $group=>$tests): ?>
             <div class="tab-pane fade" id="<?= $tabId($gidx) ?>"><div class="row g-3">
-              <?php foreach ($tests as $t): ?><div class="col-6 col-md-4 col-xl-3"><label class="form-label"><?= e($t[1]) ?><?= $t[3]?' <span class="ref-hint">'.e($t[3]).'</span>':'' ?></label><div class="input-group"><input type="<?= ($t[6]??'num')==='text'?'text':'number' ?>" step="any" name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-control"><?php if($t[2]):?><span class="input-group-text"><?= e($t[2]) ?></span><?php endif;?></div></div><?php endforeach; ?>
+              <?php foreach ($tests as $t): $opts=$t[7]??null; $isText=($t[6]??'num')==='text'; ?>
+              <div class="col-6 col-md-4 col-xl-3"><label class="form-label"><?= e($t[1]) ?><?= $t[3]?' <span class="ref-hint">'.e($t[3]).'</span>':'' ?></label>
+                <?php if ($opts): ?>
+                <select name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-select">
+                  <option value="">— เลือก —</option>
+                  <?php foreach ($opts as $o): ?><option value="<?= e($o) ?>"><?= e($o) ?></option><?php endforeach; ?>
+                </select>
+                <?php else: ?>
+                <div class="input-group"><input type="<?= $isText?'text':'number' ?>" step="any" name="v[<?= $t[0] ?>]" id="vc-<?= $t[0] ?>" class="form-control"<?= (!$isText && $t[3]) ? ' placeholder="'.e($t[3]).'"' : '' ?>><?php if($t[2]):?><span class="input-group-text"><?= e($t[2]) ?></span><?php endif;?></div>
+                <?php endif; ?>
+              </div>
+              <?php endforeach; ?>
             </div></div>
             <?php $gidx++; endforeach; ?>
           </div>
