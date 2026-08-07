@@ -284,7 +284,7 @@ function checkup_catalog(): array
             ['wbc', 'เม็ดเลือดขาว (WBC)', 'cells/cu.mm', '4000–10000', 4000, 10000],
             ['neu', 'Neutrophil', '%', '40–74', 40, 74],
             ['lym', 'Lymphocyte', '%', '19–48', 19, 48],
-            ['mono', 'Monocyte', '%', '3–9', 3, 9],
+            ['mono', 'Monocyte', '%', '2–10', 2, 10],
             ['eos', 'Eosinophil', '%', '0–7', 0, 7],
             ['baso', 'Basophil', '%', '0–2', 0, 2],
             ['plt', 'เกล็ดเลือด (Platelet)', 'Cells/cu.mm', '140000–450000', 140000, 450000],

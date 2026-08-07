@@ -145,7 +145,7 @@ body { background: var(--bs-body-bg); }
 
 /* ---- กราฟ ---- */
 .chart-box { width: 100%; overflow-x: auto; text-align: center; }
-.bp-chart { width: 100%; max-width: 100%; height: auto; display: block; }
+.bp-chart { width: 100%; max-width: 500px; height: auto; display: block; margin: 0 auto; }
 .bp-chart .axl { font-size: 12px; fill: var(--bs-secondary-color); }
 .bp-chart .axttl { font-size: 12px; fill: var(--bs-body-color); font-weight: 700; }
 .bp-chart circle { cursor: pointer; transition: r .1s; }
