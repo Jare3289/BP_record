@@ -145,7 +145,7 @@ body { background: var(--bs-body-bg); }
 
 /* ---- กราฟ ---- */
 .chart-box { width: 100%; overflow-x: auto; text-align: center; }
-.bp-chart { width: 100%; max-width: 640px; height: auto; display: block; margin: 0 auto; }
+.bp-chart { width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto; padding: 4px 2px; }
 .bp-chart .axl { font-size: 12px; fill: var(--bs-secondary-color); }
 .bp-chart .axttl { font-size: 12px; fill: var(--bs-body-color); font-weight: 700; }
 .bp-chart circle { cursor: pointer; transition: r .1s; }
@@ -626,11 +626,20 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 
 /* Modal ใส่ค่าแบบใหญ่ */
 .log-modal-ic { color: var(--brand); }
-.big-input-wrap { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin: 16px 0 4px; }
-.big-input { width: 200px; border: none; border-bottom: 3px solid var(--brand); background: transparent;
-  font-size: 3.4rem; font-weight: 800; text-align: center; color: var(--bs-body-color); font-variant-numeric: tabular-nums; }
+.log-modal-head { border: 0; background: linear-gradient(120deg, color-mix(in srgb, var(--brand) 14%, transparent), transparent);
+  border-radius: var(--bs-modal-inner-border-radius, 12px) var(--bs-modal-inner-border-radius, 12px) 0 0; padding-bottom: 14px; }
+.log-modal-head .modal-title { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.log-modal-head .modal-title .bi { color: var(--brand); }
+.log-modal-body { padding-top: 18px; }
+.value-box { text-align: center; background: color-mix(in srgb, var(--brand) 6%, var(--bs-tertiary-bg));
+  border: 1px solid color-mix(in srgb, var(--brand) 16%, transparent); border-radius: 18px; padding: 14px 16px 16px; margin-top: 4px; }
+.value-box-lbl { font-size: .82rem; color: var(--bs-secondary-color); }
+.value-box-lbl b { color: var(--brand); }
+.big-input-wrap { display: flex; align-items: baseline; justify-content: center; gap: 8px; margin: 4px 0 2px; }
+.big-input { width: 190px; max-width: 60%; border: none; border-bottom: 3px solid var(--brand); background: transparent;
+  font-size: 3.2rem; font-weight: 800; text-align: center; color: var(--bs-body-color); font-variant-numeric: tabular-nums; }
 .big-input:focus { outline: none; border-color: var(--mint); }
-.big-unit { font-size: 1rem; color: var(--bs-secondary-color); }
+.big-unit { font-size: 1rem; font-weight: 600; color: var(--bs-secondary-color); }
 
 /* ตรวจสุขภาพ: แท็บฟอร์ม */
 .ck-tabs .nav-link { font-size: .84rem; padding: 6px 14px; color: var(--bs-secondary-color); border-radius: 999px; }
@@ -804,16 +813,16 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 .lfr-field .form-control, .lfr-field .form-select { text-align: center; }
 .lfr-unit { font-size: .74rem; color: var(--bs-secondary-color); white-space: nowrap; min-width: 34px; }
 
-/* ---- แถบเลือกเกณฑ์แปลผล (บนสุดแดชบอร์ด) ---- */
-.std-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
-  background: var(--bs-body-bg); border: 1px solid var(--bs-border-color); border-radius: 16px; padding: 14px 18px; box-shadow: var(--card-shadow, 0 2px 10px rgba(0,0,0,.04)); }
-.std-bar-info { display: flex; align-items: center; gap: 12px; }
-.std-bar-info > .bi { font-size: 26px; color: var(--brand); }
-.std-bar-title { font-weight: 700; font-size: 1rem; }
-.std-bar-sub { font-size: .82rem; color: var(--bs-secondary-color); }
-.std-bar-toggle { display: inline-flex; background: var(--bs-tertiary-bg); border-radius: 999px; padding: 4px; gap: 3px; }
-.std-bar-toggle .std-opt { display: flex; flex-direction: column; align-items: center; line-height: 1.15;
-  border: 0; background: transparent; color: var(--bs-secondary-color); font-size: .92rem; font-weight: 700;
-  padding: 7px 20px; border-radius: 999px; cursor: pointer; transition: all .15s; }
-.std-bar-toggle .std-opt span { font-size: .64rem; font-weight: 500; opacity: .8; }
-.std-bar-toggle .std-opt.on { background: var(--brand); color: #fff; box-shadow: 0 2px 8px rgba(13,148,136,.4); }
+/* ---- แถบเลือกเกณฑ์แปลผล (บนสุดแดชบอร์ด) — segmented control เรียบ ๆ ---- */
+.bp-std { display: inline-flex; align-items: center; gap: 12px; }
+.bp-std-lbl { font-size: .88rem; font-weight: 600; color: var(--bs-secondary-color); }
+.bp-std-lbl .bi { color: var(--brand); }
+.bp-seg { position: relative; display: inline-flex; padding: 4px; border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 10%, var(--bs-tertiary-bg)); }
+.bp-seg-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc(50% - 4px);
+  border-radius: 999px; background: var(--brand); box-shadow: 0 2px 8px rgba(13,148,136,.35);
+  transition: transform .22s cubic-bezier(.4,0,.2,1); }
+.bp-seg[data-active="th"] .bp-seg-thumb { transform: translateX(100%); }
+.bp-seg-btn { position: relative; z-index: 1; border: 0; background: transparent; cursor: pointer;
+  font-size: .9rem; font-weight: 700; padding: 6px 22px; border-radius: 999px; color: var(--bs-secondary-color); transition: color .2s; }
+.bp-seg-btn.on { color: #fff; }
