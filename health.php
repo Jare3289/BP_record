@@ -334,8 +334,8 @@ require __DIR__ . '/includes/header.php';
     <div class="modal-content">
       <form method="post" action="save.php" id="logForm">
         <input type="hidden" name="action" value="save_health"><input type="hidden" name="id" id="l-id" value=""><input type="hidden" name="metric" id="l-metric" value="weight">
-        <div class="modal-header border-0 pb-1"><h5 class="modal-title"><i class="bi bi-clipboard2-heart-fill text-teal"></i> บันทึกค่าร่างกาย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body text-center pt-1">
+        <div class="modal-header log-modal-head"><h5 class="modal-title"><i class="bi bi-clipboard2-heart-fill"></i> บันทึกค่าร่างกาย</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body log-modal-body">
           <div class="log-metric-choose mb-3">
             <?php foreach ($metrics as $code => $m): ?>
             <button type="button" class="lmc-btn<?= $code==='weight'?' active':'' ?>" data-metric="<?= $code ?>" style="--mc:<?= e($m[3]) ?>" onclick="quickLog('<?= $code ?>')">
@@ -344,12 +344,14 @@ require __DIR__ . '/includes/header.php';
             </button>
             <?php endforeach; ?>
           </div>
-          <div class="log-what text-secondary small mb-2">กำลังบันทึก: <b id="l-title" class="text-body">น้ำหนัก</b></div>
-          <div class="big-input-wrap"><input type="number" step="any" name="val" id="l-val" class="big-input" placeholder="0" required autofocus><span class="big-unit" id="l-unit">กก.</span></div>
-          <div class="ref-hint mb-3" id="l-ref"></div>
-          <div class="row g-2 text-start"><div class="col-7"><label class="form-label x-sm">วันที่</label><input type="date" name="log_date" id="l-date" class="form-control" value="<?= e(date('Y-m-d')) ?>" required></div><div class="col-5"><label class="form-label x-sm">&nbsp;</label><input type="text" name="note" id="l-note" class="form-control" placeholder="หมายเหตุ"></div></div>
+          <div class="value-box">
+            <div class="value-box-lbl">กำลังบันทึก <b id="l-title">น้ำหนัก</b></div>
+            <div class="big-input-wrap"><input type="number" step="any" name="val" id="l-val" class="big-input" placeholder="0" required autofocus><span class="big-unit" id="l-unit">กก.</span></div>
+            <div class="ref-hint" id="l-ref"></div>
+          </div>
+          <div class="row g-2 text-start mt-1"><div class="col-7"><label class="form-label x-sm text-secondary mb-1">วันที่</label><input type="date" name="log_date" id="l-date" class="form-control" value="<?= e(date('Y-m-d')) ?>" required></div><div class="col-5"><label class="form-label x-sm text-secondary mb-1">หมายเหตุ</label><input type="text" name="note" id="l-note" class="form-control" placeholder="ไม่บังคับ"></div></div>
         </div>
-        <div class="modal-footer border-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-primary px-4"><i class="bi bi-save"></i> บันทึก</button></div>
+        <div class="modal-footer border-0 pt-0"><button type="button" class="btn btn-light" data-bs-dismiss="modal">ยกเลิก</button><button type="submit" class="btn btn-primary px-4"><i class="bi bi-save"></i> บันทึก</button></div>
       </form>
     </div>
   </div>

@@ -85,18 +85,13 @@ $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'p
 
   <!-- แถบเลือกเกณฑ์แปลผล (สลับสากล/ไทย) -->
   <?php $curStd = bp_standard(); ?>
-  <div class="std-bar mb-4">
-    <div class="std-bar-info">
-      <i class="bi bi-clipboard2-pulse-fill"></i>
-      <div>
-        <div class="std-bar-title">เกณฑ์แปลผลความดัน</div>
-        <div class="std-bar-sub">กำลังใช้: <b><?= e(bp_standard_name($curStd)) ?></b></div>
-      </div>
-    </div>
-    <form method="post" action="save.php" class="std-bar-toggle">
+  <div class="bp-std mb-4">
+    <span class="bp-std-lbl"><i class="bi bi-clipboard2-pulse"></i> เกณฑ์แปลผลความดัน</span>
+    <form method="post" action="save.php" class="bp-seg" data-active="<?= $curStd ?>">
       <input type="hidden" name="action" value="set_standard"><input type="hidden" name="back" value="dashboard.php">
-      <button name="bp_standard" value="intl" class="std-opt <?= $curStd==='intl'?'on':'' ?>">สากล<span>ACC/AHA</span></button>
-      <button name="bp_standard" value="th" class="std-opt <?= $curStd==='th'?'on':'' ?>">ไทย<span>สมาคมความดันฯ</span></button>
+      <span class="bp-seg-thumb"></span>
+      <button name="bp_standard" value="intl" class="bp-seg-btn <?= $curStd==='intl'?'on':'' ?>">สากล</button>
+      <button name="bp_standard" value="th" class="bp-seg-btn <?= $curStd==='th'?'on':'' ?>">ไทย</button>
     </form>
   </div>
 
