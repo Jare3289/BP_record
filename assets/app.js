@@ -95,6 +95,14 @@ function clearPhases() { activePhases.clear(); renderScatter(); }
 function toggleMon(i, el) {
   const mon = document.querySelector('.bp-monitor[data-mon="' + i + '"]');
   if (!mon) return;
+  const grid = mon.closest('.monitor-grid');
+  const max = grid ? parseInt(grid.dataset.max || '4', 10) : 4;
+  const isHidden = mon.classList.contains('d-none');
+  if (isHidden) {
+    // จะเปิดจอเพิ่ม — จำกัดไม่เกิน max จอ
+    const shown = grid ? grid.querySelectorAll('.bp-monitor:not(.d-none)').length : 0;
+    if (shown >= max) { alert('แสดงได้สูงสุด ' + max + ' จอ — ปิดจออื่นก่อนนะคะ'); return; }
+  }
   const show = mon.classList.toggle('d-none') === false;
   el.classList.toggle('active', show);
 }

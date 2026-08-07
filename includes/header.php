@@ -75,6 +75,14 @@ if ($hasPhoto) $profile['photo'] = $photoPath;
         </li>
       </ul>
       <div class="d-flex align-items-center gap-2">
+        <?php $navStd = function_exists('bp_standard') ? bp_standard() : 'intl';
+              $navBack = htmlspecialchars(basename($_SERVER['SCRIPT_NAME'] ?? 'dashboard.php')); ?>
+        <form method="post" action="save.php" class="bp-seg nav-std" data-active="<?= $navStd ?>" title="เกณฑ์แปลผลความดัน (สากล/ไทย)">
+          <input type="hidden" name="action" value="set_standard"><input type="hidden" name="back" value="<?= $navBack ?>">
+          <span class="bp-seg-thumb"></span>
+          <button name="bp_standard" value="intl" class="bp-seg-btn <?= $navStd==='intl'?'on':'' ?>">สากล</button>
+          <button name="bp_standard" value="th" class="bp-seg-btn <?= $navStd==='th'?'on':'' ?>">ไทย</button>
+        </form>
         <button class="btn btn-theme" id="themeToggle" type="button" title="สลับโหมดสว่าง/มืด">
           <i class="bi bi-moon-stars-fill"></i>
         </button>
