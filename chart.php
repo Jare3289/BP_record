@@ -125,7 +125,7 @@ function svg_line(array $pts, array $series, float $ymin, float $ymax, array $gr
 
 // พิกัด scatter
 $DIA_MIN = 40; $DIA_MAX = 100; $SYS_MIN = 70; $SYS_MAX = 170;
-$W = 980; $H = 540; $L = 52; $R = 20; $T = 24; $B = 46;
+$W = 700; $H = 560; $L = 52; $R = 20; $T = 24; $B = 46;
 $plotW = $W - $L - $R; $plotH = $H - $T - $B;
 $px = fn($dia) => $L + (max($DIA_MIN, min($DIA_MAX, $dia)) - $DIA_MIN) / ($DIA_MAX - $DIA_MIN) * $plotW;
 $py = fn($sys) => $T + ($SYS_MAX - max($SYS_MIN, min($SYS_MAX, $sys))) / ($SYS_MAX - $SYS_MIN) * $plotH;
@@ -143,7 +143,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="row g-4">
   <!-- Scatter -->
-  <div class="col-12">
+  <div class="col-12 col-xl-7">
     <div class="card app-card h-100">
       <div class="card-header"><i class="bi bi-bullseye"></i> แผนภาพกระจายตามโซนระดับความดัน</div>
       <div class="card-body">
@@ -207,8 +207,8 @@ require __DIR__ . '/includes/header.php';
   </div>
 
   <!-- เปรียบเทียบรายช่วง = จอเครื่องวัดความดัน -->
-  <div class="col-12">
-    <div class="card app-card">
+  <div class="col-12 col-xl-5">
+    <div class="card app-card h-100">
       <div class="card-header"><i class="bi bi-activity"></i> ค่าเฉลี่ยตามช่วง (จอเครื่องวัด)</div>
       <div class="card-body">
         <?php if (!$monitors): ?>
