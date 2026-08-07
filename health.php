@@ -362,14 +362,26 @@ require __DIR__ . '/includes/header.php';
   <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content">
       <form method="post" action="save.php" id="checkupForm">
-        <div class="modal-header"><h5 class="modal-title" id="ckTitle"><i class="bi bi-plus-circle"></i> เพิ่มผลตรวจสุขภาพ</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-        <div class="modal-body">
+        <div class="modal-header ck-modal-head">
+          <div>
+            <h5 class="modal-title" id="ckTitle"><i class="bi bi-clipboard2-plus-fill"></i> เพิ่มผลตรวจสุขภาพ</h5>
+            <div class="ck-modal-sub">กรอกเฉพาะรายการที่มีในใบผลตรวจ · ระบบไฮไลต์ค่าที่ผิดปกติให้อัตโนมัติ</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body pt-0">
           <input type="hidden" name="action" value="save_checkup"><input type="hidden" name="id" id="c-id" value="">
-          <?php $tabs=array_merge(['พื้นฐาน','ร่างกาย/ภาพ'],array_keys($catalog)); $tabId=fn($i)=>'cktab'.$i; ?>
-          <ul class="nav nav-pills ck-tabs flex-wrap mb-3" role="tablist">
-            <?php foreach ($tabs as $i=>$tab): ?><li class="nav-item"><button class="nav-link <?= $i===0?'active':'' ?>" data-bs-toggle="pill" data-bs-target="#<?= $tabId($i) ?>" type="button"><?= e($tab) ?></button></li><?php endforeach; ?>
-          </ul>
-          <div class="tab-content">
+          <?php
+            $tabs = array_merge(['พื้นฐาน','ร่างกาย/ภาพ'], array_keys($catalog));
+            $tabId = fn($i) => 'cktab'.$i;
+            $tabIcons = ['bi-person-vcard','bi-lungs-fill','bi-droplet-half','bi-gem','bi-shield-fill-plus','bi-clipboard2-pulse-fill','bi-droplet-fill','bi-clipboard2-check'];
+          ?>
+          <div class="ck-tabbar">
+            <ul class="nav ck-tabs flex-nowrap" role="tablist">
+              <?php foreach ($tabs as $i=>$tab): ?><li class="nav-item"><button class="nav-link <?= $i===0?'active':'' ?>" data-bs-toggle="pill" data-bs-target="#<?= $tabId($i) ?>" type="button"><i class="bi <?= $tabIcons[$i] ?? 'bi-clipboard' ?>"></i> <span><?= e($tab) ?></span></button></li><?php endforeach; ?>
+            </ul>
+          </div>
+          <div class="tab-content pt-2">
             <div class="tab-pane fade show active" id="<?= $tabId(0) ?>"><div class="row g-3">
               <div class="col-6 col-md-3"><label class="form-label">วันที่ตรวจ *</label><input type="date" name="checkup_date" id="c-checkup_date" class="form-control form-control-lg" value="<?= e(date('Y-m-d')) ?>" required></div>
               <div class="col-6 col-md-3"><label class="form-label">โรงพยาบาล</label><input type="text" name="hospital" id="c-hospital" class="form-control form-control-lg" placeholder="รพ.ครู"></div>
