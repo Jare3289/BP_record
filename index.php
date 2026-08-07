@@ -146,7 +146,6 @@ require __DIR__ . '/includes/header.php';
         <?php else: foreach ($daysDesc as $d):
           $ph = phase_for_date($phases, $d['date']);
           $a = $d['avg']; $bp = $d['bp'];
-          $bmi = calc_bmi($d['weight'] ?? null, $d['height'] ?? null);
           $morn = array_values(array_filter($d['readings'], fn($r) => $r['period'] === 'morning'));
           $bed  = array_values(array_filter($d['readings'], fn($r) => $r['period'] === 'bedtime'));
           $chosen = array_filter([$morn[0] ?? null, $morn[1] ?? null, $bed[0] ?? null, $bed[1] ?? null]);
@@ -157,7 +156,6 @@ require __DIR__ . '/includes/header.php';
             <td class="ps-3 text-start day-cell">
               <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
               <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
-              <?php if ($d['weight'] !== null): ?><div class="text-secondary x-sm mt-1"><i class="bi bi-speedometer2"></i> <?= e(fmt_num($d['weight'])) ?> กก.<?= $bmi !== null ? ' · BMI '.e($bmi) : '' ?></div><?php endif; ?>
             </td>
             <?= render_slot($morn[0] ?? null, $d['date'], 'morning') ?>
             <?= render_slot($morn[1] ?? null, $d['date'], 'morning') ?>
@@ -235,14 +233,9 @@ require __DIR__ . '/includes/header.php';
               </div>
             </div>
           </div>
-          <div class="row g-3">
-            <div class="col-6"><label class="form-label fw-500"><i class="bi bi-speedometer2"></i> น้ำหนัก (กก.)</label>
-              <input type="number" step="0.1" min="0" max="400" name="weight" id="f-weight" class="form-control" placeholder="ไม่บังคับ"></div>
-            <div class="col-6"><label class="form-label fw-500"><i class="bi bi-rulers"></i> ส่วนสูง (ซม.)</label>
-              <input type="number" step="0.1" min="0" max="260" name="height" id="f-height" class="form-control" placeholder="ไม่บังคับ"></div>
-          </div>
-          <div class="mt-3"><label class="form-label fw-500">หมายเหตุ</label>
+          <div class="mt-1"><label class="form-label fw-500">หมายเหตุ</label>
             <input type="text" name="note" id="f-note" class="form-control" placeholder="เช่น หลังออกกำลังกาย"></div>
+          <p class="form-text mt-2 mb-0"><i class="bi bi-info-circle"></i> น้ำหนัก · ส่วนสูง · รอบเอว บันทึกได้ที่หน้า <a href="health.php">สุขภาพ</a></p>
         </div>
         <div class="modal-footer">
           <button type="button" id="btnDelete" class="btn btn-outline-danger me-auto" style="display:none" onclick="deleteCurrent()"><i class="bi bi-trash"></i> ลบ</button>

@@ -31,10 +31,13 @@ function daily_average(array $row): array
 }
 
 /**
- * แปลผลความดันโลหิตตามเกณฑ์ ACC/AHA
+ * แปลผลความดันโลหิตตามเกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย
+ * (Thai Hypertension Society — แนวทางการรักษาโรคความดันโลหิตสูง)
  * คืน ['label' => ข้อความ, 'level' => 0-4, 'class' => css class]
  *
- * level: 0 = ปกติ, 1 = สูงเล็กน้อย, 2 = ระยะที่1, 3 = ระยะที่2, 4 = วิกฤต
+ * level: 0 = ปกติ (Optimal/Normal), 1 = เริ่มเสี่ยง (BP at risk),
+ *        2 = สูงระดับ 1, 3 = สูงระดับ 2, 4 = สูงระดับ 3
+ * เข้าเกณฑ์เมื่อค่าใดค่าหนึ่ง (บน "และ/หรือ" ล่าง) ถึงระดับ
  */
 function classify_bp(?int $sys, ?int $dia): array
 {
@@ -42,23 +45,23 @@ function classify_bp(?int $sys, ?int $dia): array
         return ['label' => '-', 'level' => -1, 'class' => 'bp-none'];
     }
 
-    // ภาวะวิกฤต (Hypertensive crisis)
-    if ($sys >= 180 || $dia >= 120) {
-        return ['label' => 'ภาวะวิกฤต ควรพบแพทย์', 'level' => 4, 'class' => 'bp-crisis'];
+    // ความดันโลหิตสูงระดับ 3
+    if ($sys >= 180 || $dia >= 110) {
+        return ['label' => 'ความดันสูงระดับ 3', 'level' => 4, 'class' => 'bp-crisis'];
     }
-    // ระยะที่ 2
+    // ความดันโลหิตสูงระดับ 2
+    if ($sys >= 160 || $dia >= 100) {
+        return ['label' => 'ความดันสูงระดับ 2', 'level' => 3, 'class' => 'bp-stage2'];
+    }
+    // ความดันโลหิตสูงระดับ 1
     if ($sys >= 140 || $dia >= 90) {
-        return ['label' => 'ความดันโลหิตสูง ระยะที่ 2', 'level' => 3, 'class' => 'bp-stage2'];
+        return ['label' => 'ความดันสูงระดับ 1', 'level' => 2, 'class' => 'bp-stage1'];
     }
-    // ระยะที่ 1
+    // เริ่มเสี่ยง — BP at risk
     if ($sys >= 130 || $dia >= 80) {
-        return ['label' => 'ความดันโลหิตสูง ระยะที่ 1', 'level' => 2, 'class' => 'bp-stage1'];
+        return ['label' => 'เริ่มเสี่ยง (BP at risk)', 'level' => 1, 'class' => 'bp-elevated'];
     }
-    // สูงเล็กน้อย (Elevated)
-    if ($sys >= 120) {
-        return ['label' => 'ความดันโลหิตสูงเล็กน้อย', 'level' => 1, 'class' => 'bp-elevated'];
-    }
-    // ปกติ
+    // ปกติ (Optimal / Normal)
     return ['label' => 'ปกติ', 'level' => 0, 'class' => 'bp-normal'];
 }
 
@@ -190,7 +193,7 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
 {
     $monthsTH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
     $lvlClass = [0=>'px-normal',1=>'px-elevated',2=>'px-stage1',3=>'px-stage2',4=>'px-crisis'];
-    $lvlName  = [0=>'ปกติ',1=>'สูงเล็กน้อย',2=>'ระยะที่ 1',3=>'ระยะที่ 2',4=>'วิกฤต'];
+    $lvlName  = [0=>'ปกติ',1=>'เริ่มเสี่ยง',2=>'สูงระดับ 1',3=>'สูงระดับ 2',4=>'สูงระดับ 3'];
     $h = '';
     foreach ($years as $y) {
         $h .= '<div class="pixel-wrap ' . ((string)$y === (string)$curYear ? '' : 'd-none') . '" data-year="' . $y . '"><table class="pixel-grid"><thead><tr><th></th>';
@@ -212,10 +215,10 @@ function pixel_calendar_html(array $dateLevel, array $years, string $curYear): s
     }
     $h .= '<div class="pixel-legend">'
         . '<span><span class="px-cell px-normal"></span> ปกติ</span>'
-        . '<span><span class="px-cell px-elevated"></span> สูงเล็กน้อย</span>'
-        . '<span><span class="px-cell px-stage1"></span> ระยะที่ 1</span>'
-        . '<span><span class="px-cell px-stage2"></span> ระยะที่ 2</span>'
-        . '<span><span class="px-cell px-crisis"></span> วิกฤต</span>'
+        . '<span><span class="px-cell px-elevated"></span> เริ่มเสี่ยง</span>'
+        . '<span><span class="px-cell px-stage1"></span> สูงระดับ 1</span>'
+        . '<span><span class="px-cell px-stage2"></span> สูงระดับ 2</span>'
+        . '<span><span class="px-cell px-crisis"></span> สูงระดับ 3</span>'
         . '<span><span class="px-cell px-empty"></span> ไม่มีข้อมูล</span></div>';
     return $h;
 }
@@ -338,16 +341,9 @@ function checkup_flag(array $test, $val): string
 function health_metrics(): array
 {
     return [
-        'glucose'  => ['น้ำตาลปลายนิ้ว', 'mg/dl', 'bi-droplet-half', '#dc3545', 70, 140, '1'],
-        'weight'   => ['น้ำหนัก', 'กก.', 'bi-speedometer2', '#0d9488', null, null, '0.1'],
-        'waist'    => ['รอบเอว', 'ซม.', 'bi-rulers', '#65a30d', null, 90, '0.5'],
-        'sleep'    => ['การนอน', 'ชม.', 'bi-moon-stars-fill', '#6d4bb0', 7, 9, '0.5'],
-        'steps'    => ['ก้าวเดิน', 'ก้าว', 'bi-person-walking', '#2c5c7a', 6000, null, '100'],
-        'water'    => ['น้ำดื่ม', 'แก้ว', 'bi-cup-straw', '#0dcaf0', 8, null, '1'],
-        'exercise' => ['ออกกำลังกาย', 'นาที', 'bi-heart-pulse-fill', '#16a34a', 30, null, '5'],
-        'spo2'     => ['ออกซิเจนปลายนิ้ว', '%', 'bi-lungs-fill', '#0d6efd', 95, 100, '1'],
-        'temp'     => ['อุณหภูมิ', '°C', 'bi-thermometer-half', '#e0699a', 36, 37.5, '0.1'],
-        'mood'     => ['อารมณ์ (1-5)', '/5', 'bi-emoji-smile-fill', '#f2a71b', 3, 5, '1'],
+        'weight' => ['น้ำหนัก', 'กก.', 'bi-speedometer2', '#0d9488', null, null, '0.1'],
+        'height' => ['ส่วนสูง', 'ซม.', 'bi-rulers', '#2c5c7a', null, null, '0.5'],
+        'waist'  => ['รอบเอว', 'ซม.', 'bi-person-arms-up', '#65a30d', null, 90, '0.5'],
     ];
 }
 
@@ -414,12 +410,12 @@ function sparkline_svg(array $values, string $color = '#57b894', int $w = 120, i
 function reference_sources(): array
 {
     return [
-        ['ความดันโลหิต', 'เกณฑ์ ACC/AHA 2017 (วัดที่บ้าน 135/85, คลินิก 140/90)'],
+        ['ความดันโลหิต', 'เกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย (Thai Hypertension Society) · วัดที่บ้าน (HBPM) สูงเมื่อ ≥135/85'],
         ['ดัชนีมวลกาย (BMI)', 'เกณฑ์เอเชีย-แปซิฟิก (WHO Asia-Pacific 2004)'],
+        ['รอบเอว', 'ชาย < 90 ซม. · หญิง < 80 ซม. (IDF / กรมอนามัย)'],
         ['ระดับไขมันในเลือด', 'NCEP ATP III / แนวทางราชวิทยาลัยอายุรแพทย์ฯ'],
         ['น้ำตาล / HbA1c', 'สมาคมโรคเบาหวานแห่งประเทศไทย (ADA/สมาคมฯ)'],
         ['ค่าห้องปฏิบัติการ (Lab)', 'ช่วงอ้างอิงตามใบรายงานผลของห้องปฏิบัติการโรงพยาบาล'],
-        ['ค่าสุขภาพทั่วไป', 'คำแนะนำทั่วไป (นอน 7-9 ชม., เดิน ≥6,000 ก้าว, ดื่มน้ำ ~8 แก้ว/วัน)'],
     ];
 }
 

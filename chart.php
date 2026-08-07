@@ -137,7 +137,7 @@ require __DIR__ . '/includes/header.php';
 
 <div class="mb-4">
   <h1 class="page-title mb-1"><i class="bi bi-graph-up-arrow"></i> กราฟแนวโน้มความดันโลหิต</h1>
-  <p class="text-secondary mb-0">แผนภาพกระจาย · เปรียบเทียบตามช่วง · แนวโน้มความดัน ชีพจร และน้ำหนัก</p>
+  <p class="text-secondary mb-0">แผนภาพกระจาย · เปรียบเทียบตามช่วง · แนวโน้มความดันและชีพจร (เกณฑ์สมาคมความดันฯ ไทย)</p>
 </div>
 
 <div class="row g-4">
@@ -166,18 +166,18 @@ require __DIR__ . '/includes/header.php';
         <?php else: ?>
         <div class="chart-box">
         <svg viewBox="0 0 <?= $W ?> <?= $H ?>" class="bp-chart" role="img">
-          <defs><pattern id="hatch" width="8" height="8" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
-            <rect width="8" height="8" fill="#d9534f"/><line x1="0" y1="0" x2="0" y2="8" stroke="#c64541" stroke-width="4"/></pattern></defs>
-          <?= $zone($DIA_MIN, $DIA_MAX, $SYS_MIN, $SYS_MAX, 'url(#hatch)') ?>
-          <?= $zone(40, 80, 70, 120, '#1aa89a') ?>
-          <?= $zone(40, 85, 120, 135, '#f2a71b') ?>
-          <?= $zone(80, 85, 70, 120, '#f2a71b') ?>
-          <?= $zone(40, 60, 70, 90, '#5b3a9e') ?>
-          <?php foreach ([70,90,120,135,170] as $s): $y=$py($s); ?>
+          <!-- โซนตามเกณฑ์สมาคมความดันโลหิตสูงแห่งประเทศไทย: วาดจากรุนแรงสุด (พื้นหลัง) ไปหาปกติ (บนสุด)
+               classify แบบ "บนและ/หรือล่าง" = สี่เหลี่ยมซ้อนจากมุมล่างซ้าย -->
+          <?= $zone($DIA_MIN, $DIA_MAX, $SYS_MIN, $SYS_MAX, '#e0699a') ?><!-- สูงระดับ 3 (พื้นหลัง) -->
+          <?= $zone(40, 110, 70, 180, '#f2a07a') ?><!-- ≤ สูงระดับ 2 -->
+          <?= $zone(40, 100, 70, 160, '#f4d06a') ?><!-- ≤ สูงระดับ 1 -->
+          <?= $zone(40, 90,  70, 140, '#b6d97f') ?><!-- ≤ เริ่มเสี่ยง -->
+          <?= $zone(40, 80,  70, 130, '#6fbf8f') ?><!-- ≤ ปกติ -->
+          <?php foreach ([70,100,130,140,160,170] as $s): $y=$py($s); ?>
             <line x1="<?= $L ?>" y1="<?= $y ?>" x2="<?= $L+$plotW ?>" y2="<?= $y ?>" stroke="#fff" stroke-width="1" opacity="0.5"/>
             <text x="<?= $L-8 ?>" y="<?= $y+4 ?>" text-anchor="end" class="axl"><?= $s ?></text>
           <?php endforeach; ?>
-          <?php foreach ([40,60,80,85,100] as $d): $x=$px($d); ?>
+          <?php foreach ([40,70,80,90,100] as $d): $x=$px($d); ?>
             <line x1="<?= $x ?>" y1="<?= $T ?>" x2="<?= $x ?>" y2="<?= $T+$plotH ?>" stroke="#fff" stroke-width="1" opacity="0.35"/>
             <text x="<?= $x ?>" y="<?= $T+$plotH+18 ?>" text-anchor="middle" class="axl"><?= $d ?></text>
           <?php endforeach; ?>
@@ -248,7 +248,7 @@ require __DIR__ . '/includes/header.php';
           echo '<div class="chart-box">' . svg_line($bpPts,
             [['key'=>'sys','color'=>'#57b894','width'=>3,'area'=>true],
              ['key'=>'dia','color'=>'#2c5c7a','width'=>2.5]],
-            60, 175, [80,120,135,160], 960, 240) . '</div>';
+            60, 175, [80,130,140,160], 960, 240) . '</div>';
         else: echo '<p class="text-center text-secondary py-4">ยังไม่มีข้อมูล</p>'; endif; ?>
         <div class="d-flex gap-3 mt-1 x-sm text-secondary">
           <span><span class="ll-dot" style="background:#57b894"></span> ความดันบน</span>
@@ -259,7 +259,7 @@ require __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ชีพจร -->
-  <div class="col-12 col-lg-6">
+  <div class="col-12">
     <div class="card app-card h-100">
       <div class="card-header"><i class="bi bi-heart-pulse"></i> แนวโน้มชีพจร (bpm)</div>
       <div class="card-body">
@@ -267,39 +267,9 @@ require __DIR__ . '/includes/header.php';
         $hrPts = array_values(array_filter($daily, fn($d) => $d['hr'] !== null));
         if ($hrPts):
           echo '<div class="chart-box">' . svg_line($hrPts,
-            [['key'=>'hr','color'=>'#e0699a','width'=>2.5,'area'=>true]], 45, 130, [60,80,100,120], 560, 230) . '</div>';
+            [['key'=>'hr','color'=>'#e0699a','width'=>2.5,'area'=>true]], 45, 130, [60,80,100,120], 960, 230) . '</div>';
         else: echo '<p class="text-center text-secondary py-4">ยังไม่มีข้อมูล</p>'; endif; ?>
-      </div>
-    </div>
-  </div>
-
-  <!-- น้ำหนัก + BMI -->
-  <div class="col-12 col-lg-6">
-    <div class="card app-card h-100">
-      <div class="card-header"><i class="bi bi-speedometer2"></i> น้ำหนัก และ BMI</div>
-      <div class="card-body">
-        <?php if ($bmi !== null): ?>
-        <div class="d-flex align-items-center gap-3 mb-3">
-          <div class="bmi-badge"><span class="bmi-n"><?= e($bmi) ?></span><span class="bmi-u">BMI</span></div>
-          <div>
-            <span class="badge-result <?= e($bmiC[1]) ?>"><?= e($bmiC[0]) ?></span>
-            <div class="text-secondary small mt-1">น้ำหนักล่าสุด <?= e(fmt_num($latestWH['weight'])) ?> กก. · สูง <?= e(fmt_num($latestWH['height'])) ?> ซม.</div>
-          </div>
-        </div>
-        <?php endif; ?>
-        <?php if ($weightPts): ?>
-          <?php
-            $ws = array_map(fn($d)=>$d['weight'], $weightPts);
-            $wmin = floor(min($ws) - 2); $wmax = ceil(max($ws) + 2);
-            $grid = [];
-            for ($g = $wmin; $g <= $wmax; $g += max(1, round(($wmax-$wmin)/4))) $grid[] = (int)$g;
-            echo '<div class="chart-box">' . svg_line($weightPts,
-              [['key'=>'weight','color'=>'#0d9488','width'=>2.5,'area'=>true]], $wmin, $wmax, $grid, 560, 200) . '</div>';
-          ?>
-        <?php else: ?>
-          <p class="text-center text-secondary py-4"><i class="bi bi-clipboard-plus fs-4 d-block mb-2"></i>
-            ยังไม่มีข้อมูลน้ำหนัก<br><span class="small">เพิ่มน้ำหนัก/ส่วนสูงได้ในหน้า <a href="index.php">ตารางบันทึก</a></span></p>
-        <?php endif; ?>
+        <p class="text-center text-secondary small mt-2 mb-0"><i class="bi bi-info-circle"></i> น้ำหนัก · ส่วนสูง · BMI ดูได้ที่หน้า <a href="health.php">สุขภาพ</a></p>
       </div>
     </div>
   </div>
