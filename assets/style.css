@@ -769,3 +769,11 @@ td.px-cell, td.px-void { height: 20px; padding: 0; }
 .body-tile .bt-val { font-size: 1.15rem; font-weight: 800; margin-top: 2px; }
 .body-tile .bt-val small { font-size: .62rem; font-weight: 500; color: var(--bs-secondary-color); margin-left: 2px; }
 .body-tile .bt-val.f-high { color: #dc2626; } .body-tile .bt-val.f-low { color: #d97706; }
+
+/* ---- toggle มาตรฐานเกณฑ์ความดัน (สากล/ไทย) ---- */
+.std-toggle { margin: 6px 0 10px; }
+.std-toggle .d-contents { display: contents; }
+.std-toggle { display: inline-flex; background: var(--bs-tertiary-bg); border-radius: 999px; padding: 3px; gap: 2px; }
+.std-opt { border: 0; background: transparent; color: var(--bs-secondary-color); font-size: .8rem; font-weight: 600;
+  padding: 4px 14px; border-radius: 999px; cursor: pointer; transition: all .15s; }
+.std-opt.on { background: var(--brand); color: #fff; box-shadow: 0 1px 4px rgba(13,148,136,.35); }

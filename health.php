@@ -361,6 +361,11 @@ require __DIR__ . '/includes/header.php';
         <input type="hidden" name="action" value="save_health"><input type="hidden" name="id" id="l-id" value=""><input type="hidden" name="metric" id="l-metric" value="weight">
         <div class="modal-header border-0 pb-0"><h5 class="modal-title"><span id="l-ic" class="log-modal-ic"><i class="bi bi-speedometer2"></i></span> <span id="l-title">บันทึกค่า</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body text-center">
+          <div class="mb-3 text-start"><label class="form-label x-sm text-secondary mb-1">เลือกค่าที่จะบันทึก</label>
+            <select id="l-metric-sel" class="form-select" onchange="quickLog(this.value)">
+              <?php foreach ($metrics as $code => $m): ?><option value="<?= $code ?>"><?= e($m[0]) ?> (<?= e($m[1]) ?>)</option><?php endforeach; ?>
+            </select>
+          </div>
           <div class="big-input-wrap"><input type="number" step="any" name="val" id="l-val" class="big-input" placeholder="0" required autofocus><span class="big-unit" id="l-unit">กก.</span></div>
           <div class="ref-hint mb-3" id="l-ref"></div>
           <div class="row g-2 text-start"><div class="col-7"><label class="form-label x-sm">วันที่</label><input type="date" name="log_date" id="l-date" class="form-control" value="<?= e(date('Y-m-d')) ?>" required></div><div class="col-5"><label class="form-label x-sm">&nbsp;</label><input type="text" name="note" id="l-note" class="form-control" placeholder="หมายเหตุ"></div></div>

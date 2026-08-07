@@ -236,6 +236,8 @@ function quickLog(code) {
   const m = (window.HEALTH_METRICS || {})[code];
   document.getElementById('l-id').value = '';
   document.getElementById('l-metric').value = code;
+  const sel = document.getElementById('l-metric-sel');
+  if (sel) sel.value = code;
   document.getElementById('l-val').value = '';
   document.getElementById('l-note').value = '';
   if (m) {

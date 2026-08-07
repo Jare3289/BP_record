@@ -135,6 +135,18 @@ if ($action === 'delete_checkup') {
     header('Location: health.php?msg=deleted'); exit;
 }
 
+/** ---------- สลับมาตรฐานการแปลผลความดัน (สากล/ไทย) ---------- */
+if ($action === 'set_standard') {
+    $std = ($_POST['bp_standard'] ?? 'intl') === 'th' ? 'th' : 'intl';
+    try {
+        db()->prepare('INSERT INTO settings (k,v) VALUES (?,?) ON DUPLICATE KEY UPDATE v=VALUES(v)')
+            ->execute(['bp_standard', $std]);
+    } catch (Throwable $e) {}
+    $back = $_POST['back'] ?? 'dashboard.php';
+    header('Location: ' . $back . '?msg=saved');
+    exit;
+}
+
 /** ---------- การตั้งค่า (เป้าหมายความดัน) ---------- */
 if ($action === 'save_settings') {
     $ts = (int) ($_POST['target_sys'] ?? 135);
