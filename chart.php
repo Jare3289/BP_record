@@ -203,7 +203,6 @@ require __DIR__ . '/includes/header.php';
             <circle class="latest-ripple latest-ripple-2" cx="<?= $lx ?>" cy="<?= $ly ?>" r="6"/>
             <circle class="latest-core" cx="<?= $lx ?>" cy="<?= $ly ?>" r="5"/>
           </g>
-          <text class="latest-tag" x="<?= $lx ?>" y="<?= sprintf('%.1f', $py($lp['sys']) - 12) ?>" text-anchor="middle" pointer-events="none">ล่าสุด</text>
           <?php endif; ?>
         </svg>
         <div id="scatterTip" class="scatter-tip"></div>

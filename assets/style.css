@@ -176,14 +176,9 @@ body { background: var(--bs-body-bg); }
   0%, 100% { opacity: 1; transform: scale(1); }
   50%      { opacity: .55; transform: scale(1.18); }
 }
-.bp-chart .latest-tag {
-  font-size: 11px; font-weight: 700; fill: #ff375f;
-  paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round;
-  animation: latestGlow 1.4s ease-in-out infinite;
-}
 @media (prefers-reduced-motion: reduce) {
   .scatter-latest .latest-ripple { animation: none; opacity: .8; }
-  .scatter-latest .latest-core, .bp-chart .latest-tag { animation: none; }
+  .scatter-latest .latest-core { animation: none; }
 }
 .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: .82rem; }
 .chart-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
