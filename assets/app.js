@@ -79,7 +79,7 @@ function renderScatter() {
       c.style.opacity = '1';
       c.setAttribute('fill', c.dataset.color || '#57b894');
     } else {
-      c.style.opacity = '0.1';
+      c.style.opacity = c.dataset.latest ? '1' : '0.1';
       c.setAttribute('fill', c.dataset.base || '#2c5c7a');
     }
   });

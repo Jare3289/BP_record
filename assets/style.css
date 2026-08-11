@@ -155,6 +155,36 @@ body { background: var(--bs-body-bg); }
 .bp-chart .axttl { font-size: 12px; fill: var(--bs-body-color); font-weight: 700; }
 .bp-chart circle { cursor: pointer; transition: r .1s; }
 .bp-chart circle:hover { r: 6; }
+
+/* ===== ไฮไลต์จุดล่าสุดในแผนภาพกระจาย (กระเพื่อม + กระพริบ) ===== */
+.scatter-latest .latest-ripple {
+  fill: none; stroke: #ff375f; stroke-width: 2.5;
+  transform-box: fill-box; transform-origin: center;
+  animation: latestRipple 1.8s ease-out infinite;
+}
+.scatter-latest .latest-ripple-2 { animation-delay: .9s; }
+@keyframes latestRipple {
+  0%   { transform: scale(.7); opacity: .9; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+.scatter-latest .latest-core {
+  fill: #ff375f; stroke: #fff; stroke-width: 2;
+  transform-box: fill-box; transform-origin: center;
+  animation: latestGlow 1.4s ease-in-out infinite;
+}
+@keyframes latestGlow {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .55; transform: scale(1.18); }
+}
+.bp-chart .latest-tag {
+  font-size: 11px; font-weight: 700; fill: #ff375f;
+  paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round;
+  animation: latestGlow 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scatter-latest .latest-ripple { animation: none; opacity: .8; }
+  .scatter-latest .latest-core, .bp-chart .latest-tag { animation: none; }
+}
 .chart-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: .82rem; }
 .chart-legend .lg { display: inline-flex; align-items: center; gap: 6px; }
 .chart-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
