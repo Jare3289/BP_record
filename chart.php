@@ -189,13 +189,21 @@ require __DIR__ . '/includes/header.php';
           <rect x="<?= $L ?>" y="<?= $T ?>" width="<?= $plotW ?>" height="<?= $plotH ?>" fill="none" stroke="#cbd5e1"/>
           <text x="<?= $L ?>" y="16" class="axttl">Systolic (ความดันบน)</text>
           <text x="<?= $L+$plotW ?>" y="<?= $H-8 ?>" text-anchor="end" class="axttl">Diastolic (ความดันล่าง)</text>
-          <?php foreach ($scatter as $d): $ph=$d['phase']; ?>
-            <circle class="scatter-pt" cx="<?= sprintf('%.1f',$px($d['dia'])) ?>" cy="<?= sprintf('%.1f',$py($d['sys'])) ?>" r="4.5"
+          <?php $lastIdx = count($scatter) - 1; foreach ($scatter as $i => $d): $ph=$d['phase']; $isLatest = ($i === $lastIdx); ?>
+            <circle class="scatter-pt<?= $isLatest ? ' is-latest' : '' ?>" cx="<?= sprintf('%.1f',$px($d['dia'])) ?>" cy="<?= sprintf('%.1f',$py($d['sys'])) ?>" r="4.5"
               fill="#2c5c7a" stroke="#fff" stroke-width="1.2"
               data-base="#2c5c7a" data-phase="<?= $ph ? (int)$ph['id'] : '' ?>" data-color="<?= $ph ? e($ph['color']) : '#57b894' ?>"
               data-date="<?= fmt_date($d['date']) ?>" data-sys="<?= $d['sys'] ?>" data-dia="<?= $d['dia'] ?>"
-              data-hr="<?= $d['hr'] !== null ? $d['hr'] : '' ?>" data-phasename="<?= $ph ? e($ph['name']) : '' ?>"></circle>
+              data-hr="<?= $d['hr'] !== null ? $d['hr'] : '' ?>" data-phasename="<?= $ph ? e($ph['name']) : '' ?>"<?= $isLatest ? ' data-latest="1"' : '' ?>></circle>
           <?php endforeach; ?>
+          <?php if ($scatter): $lp = $scatter[$lastIdx]; $lx = sprintf('%.1f', $px($lp['dia'])); $ly = sprintf('%.1f', $py($lp['sys'])); ?>
+          <!-- ไฮไลต์จุดล่าสุด: วงกระเพื่อม + จุดกระพริบ -->
+          <g class="scatter-latest" pointer-events="none">
+            <circle class="latest-ripple" cx="<?= $lx ?>" cy="<?= $ly ?>" r="6"/>
+            <circle class="latest-ripple latest-ripple-2" cx="<?= $lx ?>" cy="<?= $ly ?>" r="6"/>
+            <circle class="latest-core" cx="<?= $lx ?>" cy="<?= $ly ?>" r="5"/>
+          </g>
+          <?php endif; ?>
         </svg>
         <div id="scatterTip" class="scatter-tip"></div>
         </div>
