@@ -156,10 +156,9 @@ require __DIR__ . '/includes/header.php';
           <tr data-date="<?= fmt_date($d['date']) ?>" class="day-start text-center">
             <td class="ps-3 text-start day-cell">
               <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
-              <?php if ($ph || $notes): ?>
+              <?php if ($ph): ?>
               <div class="day-meta">
-                <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
-                <?php foreach ($notes as $n): ?><span class="day-note"><i class="bi bi-sticky"></i> <?= e($n) ?></span><?php endforeach; ?>
+                <span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span>
               </div>
               <?php endif; ?>
             </td>
@@ -170,7 +169,14 @@ require __DIR__ . '/includes/header.php';
             <td class="fw-bold avg-cell <?= e($bp['class']) ?>"><?= num($a['sys']) ?></td>
             <td class="fw-bold"><?= num($a['dia']) ?></td>
             <td class="fw-bold text-secondary"><?= num($a['hr']) ?></td>
-            <td><span class="badge-result <?= e($bp['class']) ?>"><?= e($bp['label']) ?></span></td>
+            <td>
+              <span class="badge-result <?= e($bp['class']) ?>"><?= e($bp['label']) ?></span>
+              <?php if ($notes): ?>
+              <div class="result-notes">
+                <?php foreach ($notes as $n): ?><span class="day-note"><i class="bi bi-sticky"></i> <?= e($n) ?></span><?php endforeach; ?>
+              </div>
+              <?php endif; ?>
+            </td>
             <td class="text-nowrap">
               <button type="button" class="btn btn-sm btn-icon btn-outline-secondary" onclick="addForDay('<?= e($d['date']) ?>')" title="เพิ่มการวัดในวันนี้"><i class="bi bi-plus-lg"></i></button>
             </td>
