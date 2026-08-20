@@ -156,8 +156,12 @@ require __DIR__ . '/includes/header.php';
           <tr data-date="<?= fmt_date($d['date']) ?>" class="day-start text-center">
             <td class="ps-3 text-start day-cell">
               <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
-              <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
-              <?php foreach ($notes as $n): ?><span class="day-note"><i class="bi bi-sticky"></i> <?= e($n) ?></span><?php endforeach; ?>
+              <?php if ($ph || $notes): ?>
+              <div class="day-meta">
+                <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
+                <?php foreach ($notes as $n): ?><span class="day-note"><i class="bi bi-sticky"></i> <?= e($n) ?></span><?php endforeach; ?>
+              </div>
+              <?php endif; ?>
             </td>
             <?= render_slot($morn[0] ?? null, $d['date'], 'morning') ?>
             <?= render_slot($morn[1] ?? null, $d['date'], 'morning') ?>
