@@ -151,11 +151,17 @@ require __DIR__ . '/includes/header.php';
           $chosen = array_filter([$morn[0] ?? null, $morn[1] ?? null, $bed[0] ?? null, $bed[1] ?? null]);
           $chosenIds = array_map(fn($r) => $r['id'], $chosen);
           $extra = array_values(array_filter($d['readings'], fn($r) => !in_array($r['id'], $chosenIds)));
+          $notes = array_values(array_unique(array_filter(array_map(fn($r) => trim((string)($r['note'] ?? '')), $d['readings']), fn($n) => $n !== '')));
         ?>
           <tr data-date="<?= fmt_date($d['date']) ?>" class="day-start text-center">
             <td class="ps-3 text-start day-cell">
               <div class="fw-600 text-nowrap"><?= fmt_date($d['date']) ?></div>
-              <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
+              <?php if ($ph || $notes): ?>
+              <div class="day-meta">
+                <?php if ($ph): ?><span class="phase-tag sm" style="--pc:<?= e($ph['color']) ?>"><i class="bi bi-circle-fill"></i> <?= e($ph['name']) ?></span><?php endif; ?>
+                <?php foreach ($notes as $n): ?><span class="day-note"><i class="bi bi-sticky"></i> <?= e($n) ?></span><?php endforeach; ?>
+              </div>
+              <?php endif; ?>
             </td>
             <?= render_slot($morn[0] ?? null, $d['date'], 'morning') ?>
             <?= render_slot($morn[1] ?? null, $d['date'], 'morning') ?>
